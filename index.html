@@ -113,6 +113,7 @@
         <div class="hero-img-frame">
           <img
             class="hero-img"
+            id="hero-main-img"
             src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=900&q=85"
             alt="Résidence AURELYS"
             loading="eager"
@@ -127,17 +128,18 @@
         <!-- Image secondaire (overlapping) -->
         <div class="hero-img-secondary">
           <img
+            id="hero-secondary-img"
             src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb3?w=600&q=80"
             alt=""
             loading="lazy"
           >
         </div>
 
-        <!-- Floating card infos -->
+        <!-- Floating card infos (rempli dynamiquement par app.js) -->
         <div class="hero-floating-card">
-          <p class="hero-floating-label">Paris · Canal Saint-Martin</p>
-          <p class="hero-floating-title">Appartement loft</p>
-          <p class="hero-floating-price">320 <span>€ / nuit</span></p>
+          <p class="hero-floating-label" id="hero-floating-label">Paris · Canal Saint-Martin</p>
+          <p class="hero-floating-title" id="hero-floating-title">Appartement loft</p>
+          <p class="hero-floating-price" id="hero-floating-price">320 <span>€ / nuit</span></p>
         </div>
 
         <!-- Floating rating -->

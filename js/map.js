@@ -68,6 +68,14 @@ const AureMap = (() => {
     _buildMarkers(available);
     _fitAll();
 
+    /* ── Forcer le recalcul de la taille (tiles) ──────── */
+    setTimeout(() => {
+      if (_map) {
+        _map.invalidateSize({ animate: false });
+        _fitAll();
+      }
+    }, 150);
+
     /* ── Panel latéral + stats ────────────────────────── */
     _renderStats(available);
     _renderPanel(available);

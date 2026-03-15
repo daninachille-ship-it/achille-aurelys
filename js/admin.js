@@ -445,6 +445,16 @@ function renderTextsForm() {
   setField('text-about-body',       e.body);
   setField('text-newsletter-title', n.title);
   setField('text-newsletter-text',  n.subtitle);
+  setField('text-hero-image',           h.heroImage           || '');
+  setField('text-hero-image-secondary', h.heroImageSecondary  || '');
+  _updateHeroImgPreview(h.heroImage || '');
+
+  // Aperçu live quand l'URL change
+  const imgInput = document.getElementById('text-hero-image');
+  if (imgInput && !imgInput._previewBound) {
+    imgInput._previewBound = true;
+    imgInput.addEventListener('input', () => _updateHeroImgPreview(imgInput.value));
+  }
   setField('text-contact-email',    g.contactEmail);
   setField('text-phone',            g.contactPhone);
   setField('text-address',          g.address);
@@ -468,8 +478,10 @@ function saveTexts() {
 
   g.siteName          = getField('text-site-name');
   g.tagline           = getField('text-tagline');
-  h.title             = getField('text-hero-title');
-  h.subtitle          = getField('text-hero-subtitle');
+  h.title                = getField('text-hero-title');
+  h.subtitle             = getField('text-hero-subtitle');
+  h.heroImage            = getField('text-hero-image');
+  h.heroImageSecondary   = getField('text-hero-image-secondary');
   e.title             = getField('text-about-title');
   e.body              = getField('text-about-body');
   n.title             = getField('text-newsletter-title');
@@ -630,6 +642,19 @@ function confirmResetData() {
   adminData = Storage.getData();
   showToast('Données réinitialisées.');
   loadPanel('dashboard');
+}
+
+// ── Aperçu image hero ─────────────────────────────────────────── //
+function _updateHeroImgPreview(url) {
+  const wrap = document.getElementById('hero-img-preview-wrap');
+  const img  = document.getElementById('hero-img-preview');
+  if (!wrap || !img) return;
+  if (url && url.startsWith('http')) {
+    img.src = url;
+    wrap.style.display = '';
+  } else {
+    wrap.style.display = 'none';
+  }
 }
 
 // ── Utilitaires DOM ───────────────────────────────────────────── //

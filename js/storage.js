@@ -239,19 +239,19 @@ const DEFAULT_DATA = {
         label: 'Collection AURELYS',
         title: 'Intemporel\npar choix.',
         subtitle: 'Des résidences d\'exception sélectionnées pour ceux qui refusent de choisir entre le confort et l\'élégance.',
-        ctaPrimary: { label: 'Découvrir les résidences', href: '#residences' },
-        ctaSecondary: { label: 'Notre approche', href: '#apropos' }
+        ctaPrimary: { label: 'Découvrir les résidences', href: '#logements' },
+        ctaSecondary: { label: 'Notre approche', href: '#a-propos' }
       },
       editorial: {
         label: 'Notre approche',
         title: 'Une curation rigoureuse.',
         body: "Chaque résidence AURELYS est sélectionnée selon des critères d'exigence définis par notre équipe. Qualité architecturale, emplacement, confort des matières, qualité du service : nous ne référençons que ce que nous choisirions pour nous-mêmes.\n\nNous travaillons avec un nombre limité de propriétaires partageant la même vision de l'hospitalité haut de gamme.",
         image: 'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=900&q=85',
-        cta: { label: 'Notre sélection', href: '#residences' }
+        cta: { label: 'Notre sélection', href: '#logements' }
       },
       stats: [
-        { value: '12', label: 'Résidences' },
-        { value: '4', label: 'Destinations' },
+        { value: '3+', label: 'Résidences' },
+        { value: '5★', label: 'Expérience' },
         { value: '98%', label: 'Satisfaction' }
       ],
       newsletter: {

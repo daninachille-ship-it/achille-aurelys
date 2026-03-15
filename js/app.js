@@ -1,6 +1,6 @@
 /**
- * app.js — Logique du site public Achille & Aurelys
- * Se base sur AureStorage (storage.js v2) pour toutes les données
+ * app.js — Logique du site public AURELYS
+ * Données : AureStorage v2 | Carte : Leaflet | Booking : AureBooking
  */
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -9,21 +9,27 @@ document.addEventListener('DOMContentLoaded', () => {
   applyContent(data.content);
   renderProperties(data.properties);
   renderUpcoming(data.upcomingProperties);
+  renderStats(data.content.home && data.content.home.stats);
+  renderFaq(data.content && data.content.faq);
+  initMap(data.properties);
 
   initNav();
   initNewsletter();
   initContactForm(data.content.global.globalFormspreeId);
   initFadeIn();
+  initParallax();
 
-  // Écouter les mises à jour locales
+  /* Écoute des mises à jour locales */
   window.addEventListener('aurelys:dataChanged', () => {
     const fresh = AureStorage.getData();
     applyContent(fresh.content);
     renderProperties(fresh.properties);
     renderUpcoming(fresh.upcomingProperties);
+    renderStats(fresh.content.home && fresh.content.home.stats);
+    renderFaq(fresh.content && fresh.content.faq);
+    updateMapMarkers(fresh.properties);
   });
 
-  // Synchronisation cross-onglets
   window.addEventListener('storage', (e) => {
     if (e.key === 'aurelys_v2') {
       const fresh = AureStorage.getData();
@@ -34,73 +40,86 @@ document.addEventListener('DOMContentLoaded', () => {
   });
 });
 
-/* ── Applique le contenu éditable ──────────────────────────── */
+
+/* ── Contenu éditorial ──────────────────────────────────────── */
+
 function applyContent(content) {
   if (!content) return;
-  const global = content.global || {};
-  const home   = content.home   || {};
-  const hero   = home.hero      || {};
-  const nl     = home.newsletter || {};
-  const editorial = home.editorial || {};
+  const global = content.global   || {};
+  const home   = content.home     || {};
+  const hero   = home.hero        || {};
+  const nl     = home.newsletter  || {};
+  const ed     = home.editorial   || {};
 
-  // Nom du site
+  /* Nom de la marque — toujours AURELYS */
   document.querySelectorAll('[data-text="siteName"]').forEach(el => {
-    el.textContent = global.siteName || 'AURELYS';
+    el.textContent = 'AURELYS';
+  });
+  document.querySelectorAll('[data-text="footerBrand"]').forEach(el => {
+    el.textContent = 'AURELYS';
   });
 
-  // Titre de la page
-  const tagline = global.tagline || '';
-  document.title = tagline
-    ? `${global.siteName || 'AURELYS'} — ${tagline}`
-    : (global.siteName || 'AURELYS');
+  /* Tagline footer */
+  document.querySelectorAll('[data-text="tagline"]').forEach(el => {
+    el.textContent = global.tagline || 'Intemporel par choix.';
+  });
 
-  // Hero
+  /* Titre page */
+  document.title = 'AURELYS — Intemporel par choix.';
+
+  /* Hero */
   const heroTitle = document.getElementById('hero-title');
-  if (heroTitle) heroTitle.innerHTML = _formatTitle(hero.title || '');
+  if (heroTitle) heroTitle.innerHTML = _formatTitle(hero.title || 'Intemporel<br><em>par choix.</em>');
 
   const heroSubtitle = document.getElementById('hero-subtitle');
   if (heroSubtitle) heroSubtitle.textContent = hero.subtitle || '';
 
-  // Section À propos — utilise le contenu éditorial
+  /* À propos */
   const aboutTitle = document.getElementById('about-title');
-  if (aboutTitle) aboutTitle.textContent = editorial.title || '';
+  if (aboutTitle) aboutTitle.textContent = ed.title || 'Une curation rigoureuse.';
 
   const aboutBody = document.getElementById('about-body');
-  if (aboutBody) aboutBody.textContent = editorial.body
-    ? editorial.body.split('\n\n')[0]   // premier paragraphe
+  if (aboutBody) aboutBody.textContent = ed.body
+    ? ed.body.split('\n\n')[0]
     : '';
 
-  // Newsletter
+  /* Newsletter */
   const nlTitle = document.getElementById('newsletter-title');
-  if (nlTitle) nlTitle.textContent = nl.title || '';
+  if (nlTitle) nlTitle.textContent = nl.title || 'Avant-première.';
 
   const nlText = document.getElementById('newsletter-text');
   if (nlText) nlText.textContent = nl.body || '';
 
-  // Footer
-  document.querySelectorAll('[data-text="footerBrand"]').forEach(el => {
-    el.textContent = global.siteName || 'AURELYS';
-  });
-
-  // Liens sociaux
+  /* Liens sociaux */
   document.querySelectorAll('[data-href="instagram"]').forEach(el => {
-    el.href = global.instagramUrl || '#';
+    if (global.instagramUrl) el.href = global.instagramUrl;
   });
   document.querySelectorAll('[data-href="linkedin"]').forEach(el => {
-    el.href = global.linkedinUrl || '#';
+    if (global.linkedinUrl) el.href = global.linkedinUrl;
   });
+
+  /* Formspree contact */
+  const cf = document.getElementById('contact-form');
+  if (cf && global.globalFormspreeId && global.globalFormspreeId !== 'YOUR_FORMSPREE_ID') {
+    cf.action = `https://formspree.io/f/${global.globalFormspreeId}`;
+  }
 }
 
-/** Formate le titre (sauts de ligne → <br> + <em> sur les lignes suivantes) */
 function _formatTitle(text) {
   if (!text) return '';
-  return text
-    .split('\n')
-    .map((line, i) => i === 0 ? line : `<em>${line}</em>`)
-    .join('<br>');
+  if (text.includes('<br>') || text.includes('\n')) {
+    return text
+      .replace(/\n/g, '<br>')
+      .split('<br>')
+      .map((line, i) => i === 0 ? line : (line.startsWith('<em>') ? line : `<em>${line}</em>`))
+      .join('<br>');
+  }
+  return text;
 }
 
-/* ── Rendu des logements ────────────────────────────────────── */
+
+/* ── Logements (cards overlay éditorial) ───────────────────── */
+
 function renderProperties(properties) {
   const grid = document.getElementById('properties-grid');
   if (!grid) return;
@@ -110,66 +129,90 @@ function renderProperties(properties) {
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0));
 
   if (available.length === 0) {
-    grid.innerHTML = '<p style="color:var(--color-text-muted);grid-column:1/-1">Aucun logement disponible pour le moment.</p>';
+    grid.innerHTML = '<p style="color:var(--color-text-muted);grid-column:1/-1;padding:40px 0;">Aucun logement disponible pour le moment.</p>';
     return;
   }
 
-  grid.innerHTML = available.map(p => _propertyCardHTML(p)).join('');
+  grid.innerHTML = available.map((p, i) => _propertyCardHTML(p, i)).join('');
 
+  /* Attacher les listeners Réserver */
   grid.querySelectorAll('[data-reserve]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.dataset.reserve;
-      AureBooking.initBookingModal(id);
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      AureBooking.initBookingModal(btn.dataset.reserve);
     });
   });
+
+  /* Relancer les animations fade-in sur les nouvelles cartes */
+  initFadeIn();
 }
 
-function _propertyCardHTML(p) {
-  const coverImage = (p.media && p.media.coverImage) || '';
+function _propertyCardHTML(p, index = 0) {
+  const cover      = escHtml((p.media && p.media.coverImage) || '');
   const title      = escHtml(p.title || p.name || '');
-  const location   = p.location
-    ? escHtml(p.location.city || p.location.area || '')
-    : '';
-  const desc       = escHtml(p.shortDescription || p.description || '');
+  const city       = p.location ? escHtml(p.location.city || '') : '';
+  const area       = p.location ? escHtml(p.location.area || '') : '';
+  const loc        = [city, area].filter(Boolean).join(' · ');
+  const desc       = escHtml(p.shortDescription || '');
   const price      = (p.pricing && p.pricing.perNight) || 0;
   const currency   = (p.pricing && p.pricing.currency) || 'EUR';
-  const amenities  = (p.amenities || p.features || []).slice(0, 4)
-    .map(f => `<span class="property-feature">${escHtml(f)}</span>`)
-    .join('');
+  const guests     = (p.capacity && p.capacity.guests);
+  const bedrooms   = (p.capacity && p.capacity.bedrooms);
+  const amenities  = (p.amenities || p.features || []).slice(0, 3);
+  const badges     = (p.badges || []);
+  const delay      = index % 3;
 
   const priceStr = new Intl.NumberFormat('fr-FR', {
     style: 'currency', currency, minimumFractionDigits: 0
   }).format(price);
 
-  const badges = (p.badges || [])
-    .map(b => `<span class="property-badge">${escHtml(b)}</span>`)
+  const badgesHtml = badges.length
+    ? badges.map(b => `<span class="property-badge">${escHtml(b)}</span>`).join('')
+    : '<span class="property-badge">Disponible</span>';
+
+  const metaHtml = [];
+  if (guests)   metaHtml.push(`<span>${guests} pers.</span><span class="property-meta-sep">·</span>`);
+  if (bedrooms) metaHtml.push(`<span>${bedrooms} ch.</span><span class="property-meta-sep">·</span>`);
+
+  const pillsHtml = amenities
+    .map(a => `<span class="property-amenity-pill">${escHtml(a)}</span>`)
     .join('');
 
+  const delayClass = delay > 0 ? ` fade-in-delay-${delay}` : '';
+
   return `
-    <article class="property-card fade-in">
-      <div class="property-img-wrap">
+    <article class="property-card fade-in${delayClass}" role="article" data-property-id="${escHtml(p.id)}">
+      <div class="property-media">
         <img
           class="property-img"
-          src="${escHtml(coverImage)}"
+          src="${cover}"
           alt="${title}"
           loading="lazy"
           onerror="this.src='https://images.unsplash.com/photo-1613977257363-707ba9348227?w=800&q=80'"
         >
-        ${badges || '<span class="property-badge">Disponible</span>'}
-      </div>
-      <div class="property-body">
-        <p class="property-location">${location}</p>
-        <h3 class="property-name">${title}</h3>
-        <p class="property-desc">${desc}</p>
-        <div class="property-features">${amenities}</div>
-        <div class="property-footer">
-          <div class="property-price">
-            <span class="property-price-amount">${priceStr}</span>
-            <span class="property-price-unit">/ nuit</span>
+
+        <div class="property-info-overlay">
+          <!-- Badges haut -->
+          <div class="property-tags">${badgesHtml}</div>
+
+          <!-- Infos bas (remonte au hover) -->
+          <div class="property-bottom">
+            <p class="property-location">${loc}</p>
+            <h3 class="property-title">${title}</h3>
+            <div class="property-meta-row">
+              ${metaHtml.join('')}
+              <span class="property-price-inline">${priceStr}<span class="property-price-unit"> / nuit</span></span>
+            </div>
           </div>
-          <button class="btn btn-primary" data-reserve="${escHtml(p.id)}">
+        </div>
+
+        <!-- Panel reveal au hover -->
+        <div class="property-hover-reveal">
+          ${desc ? `<p class="property-desc-short">${desc}</p>` : ''}
+          ${pillsHtml ? `<div class="property-amenity-pills">${pillsHtml}</div>` : ''}
+          <button class="btn btn-primary btn-sm" data-reserve="${escHtml(p.id)}">
             Réserver
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
+            <svg width="12" height="12" viewBox="0 0 14 14" fill="none">
               <path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
             </svg>
           </button>
@@ -178,7 +221,9 @@ function _propertyCardHTML(p) {
     </article>`;
 }
 
-/* ── Rendu des logements à venir ────────────────────────────── */
+
+/* ── Logements à venir ──────────────────────────────────────── */
+
 function renderUpcoming(upcoming) {
   const grid    = document.getElementById('upcoming-grid');
   const section = document.getElementById('a-venir');
@@ -190,24 +235,22 @@ function renderUpcoming(upcoming) {
   }
 
   if (section) section.style.display = '';
-  grid.innerHTML = upcoming.map(u => _upcomingCardHTML(u)).join('');
+  grid.innerHTML = upcoming.map((u, i) => _upcomingCardHTML(u, i)).join('');
+  initFadeIn();
 }
 
-function _upcomingCardHTML(u) {
-  const coverImage = (u.media && u.media.coverImage) || '';
-  const title      = escHtml(u.title || u.name || '');
-  const location   = u.location
-    ? escHtml(u.location.city || u.location.area || '')
-    : '';
-  const dateLabel  = u.expectedDate
-    ? _formatExpectedDate(u.expectedDate)
-    : 'Bientôt';
+function _upcomingCardHTML(u, index = 0) {
+  const cover  = escHtml((u.media && u.media.coverImage) || '');
+  const title  = escHtml(u.title || u.name || '');
+  const city   = u.location ? escHtml(u.location.city || '') : '';
+  const date   = u.expectedDate ? _formatExpectedDate(u.expectedDate) : 'Bientôt';
+  const delay  = index > 0 ? ` fade-in-delay-${Math.min(index, 4)}` : '';
 
   return `
-    <div class="upcoming-card fade-in">
+    <div class="upcoming-card fade-in${delay}">
       <img
         class="upcoming-card-img"
-        src="${escHtml(coverImage)}"
+        src="${cover}"
         alt="${title}"
         loading="lazy"
         onerror="this.src='https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800&q=80'"
@@ -218,25 +261,211 @@ function _upcomingCardHTML(u) {
             <circle cx="5" cy="5" r="4" stroke="currentColor" stroke-width="1.5"/>
             <path d="M5 3v2l1.5 1.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/>
           </svg>
-          ${dateLabel}
+          ${date}
         </span>
         <h3 class="upcoming-name">${title}</h3>
-        <p class="upcoming-location">${location}</p>
+        ${city ? `<p class="upcoming-location">${city}</p>` : ''}
       </div>
     </div>`;
 }
 
-function _formatExpectedDate(dateStr) {
+function _formatExpectedDate(str) {
   try {
-    const [year, month] = dateStr.split('-');
-    const d = new Date(parseInt(year), parseInt(month) - 1);
+    const parts = str.split('-');
+    const d = new Date(parseInt(parts[0]), parseInt(parts[1] || 1) - 1);
     return d.toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
   } catch {
-    return dateStr;
+    return str;
   }
 }
 
+
+/* ── Stats ──────────────────────────────────────────────────── */
+
+function renderStats(stats) {
+  const band = document.getElementById('stats-row');
+  if (!band) return;
+
+  const list = Array.isArray(stats) && stats.length > 0
+    ? stats
+    : [
+        { value: '3+',  label: 'Résidences' },
+        { value: '5★',  label: 'Expérience' },
+        { value: '98%', label: 'Satisfaction' }
+      ];
+
+  band.innerHTML = `
+    <div class="container">
+      <div class="stats-row">
+        ${list.map(s => `
+          <div class="stat fade-in">
+            <div class="stat-value">${escHtml(String(s.value))}</div>
+            <div class="stat-label">${escHtml(s.label)}</div>
+          </div>`).join('')}
+      </div>
+    </div>`;
+
+  initFadeIn();
+}
+
+
+/* ── FAQ ────────────────────────────────────────────────────── */
+
+function renderFaq(items) {
+  const list = document.getElementById('faq-list');
+  const section = document.getElementById('faq');
+  if (!list) return;
+
+  if (!items || items.length === 0) {
+    if (section) section.style.display = 'none';
+    return;
+  }
+
+  if (section) section.style.display = '';
+
+  list.innerHTML = items.map(item => `
+    <div class="faq-item fade-in" id="faq-${escHtml(item.id)}">
+      <button class="faq-question" aria-expanded="false" aria-controls="faq-answer-${escHtml(item.id)}">
+        <span>${escHtml(item.question)}</span>
+        <span class="faq-icon" aria-hidden="true">+</span>
+      </button>
+      <div class="faq-answer" id="faq-answer-${escHtml(item.id)}" role="region">
+        ${escHtml(item.answer)}
+      </div>
+    </div>`).join('');
+
+  /* Accordion */
+  list.querySelectorAll('.faq-question').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const item    = btn.closest('.faq-item');
+      const isOpen  = item.classList.contains('open');
+
+      /* Fermer tous les autres */
+      list.querySelectorAll('.faq-item.open').forEach(el => {
+        if (el !== item) {
+          el.classList.remove('open');
+          el.querySelector('.faq-question').setAttribute('aria-expanded', 'false');
+        }
+      });
+
+      item.classList.toggle('open', !isOpen);
+      btn.setAttribute('aria-expanded', String(!isOpen));
+    });
+  });
+
+  initFadeIn();
+}
+
+
+/* ── Carte Leaflet ──────────────────────────────────────────── */
+
+let _map = null;
+let _markersLayer = null;
+
+function initMap(properties) {
+  const container = document.getElementById('map-container');
+  if (!container || typeof L === 'undefined') return;
+
+  const available = (properties || []).filter(p => p.available !== false && p.location && p.location.lat);
+  if (available.length === 0) {
+    const mapSection = document.getElementById('carte');
+    if (mapSection) mapSection.style.display = 'none';
+    return;
+  }
+
+  /* Centre de la carte sur le barycentre des propriétés */
+  const centerLat = available.reduce((s, p) => s + p.location.lat, 0) / available.length;
+  const centerLng = available.reduce((s, p) => s + p.location.lng, 0) / available.length;
+
+  _map = L.map('map-container', {
+    center: [centerLat, centerLng],
+    zoom: available.length === 1 ? 12 : 6,
+    zoomControl: true,
+    scrollWheelZoom: false,
+  });
+
+  /* Tuiles sombres CartoDB */
+  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
+    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions">CARTO</a>',
+    subdomains: 'abcd',
+    maxZoom: 19
+  }).addTo(_map);
+
+  _markersLayer = L.layerGroup().addTo(_map);
+  _addMarkers(available);
+}
+
+function _addMarkers(properties) {
+  if (!_markersLayer) return;
+  _markersLayer.clearLayers();
+
+  /* Marqueur SVG personnalisé AURELYS */
+  const iconHtml = `
+    <div style="
+      width:36px;height:36px;
+      background:rgba(201,186,168,0.15);
+      border:1.5px solid rgba(201,186,168,0.7);
+      border-radius:50%;
+      display:flex;align-items:center;justify-content:center;
+      backdrop-filter:blur(8px);
+      box-shadow:0 4px 16px rgba(0,0,0,0.5);
+      transition:transform 0.2s;
+    ">
+      <div style="width:8px;height:8px;background:#c9baa8;border-radius:50%;"></div>
+    </div>`;
+
+  const icon = L.divIcon({
+    html: iconHtml,
+    className: '',
+    iconSize: [36, 36],
+    iconAnchor: [18, 18],
+    popupAnchor: [0, -22]
+  });
+
+  properties.forEach(p => {
+    if (!p.location || !p.location.lat) return;
+
+    const price = (p.pricing && p.pricing.perNight) || 0;
+    const currency = (p.pricing && p.pricing.currency) || 'EUR';
+    const priceStr = new Intl.NumberFormat('fr-FR', {
+      style: 'currency', currency, minimumFractionDigits: 0
+    }).format(price);
+
+    const city = (p.location.city || p.location.area || '');
+    const cover = (p.media && p.media.coverImage) || '';
+
+    const popupContent = `
+      <div class="map-popup">
+        ${cover ? `<img class="map-popup-img" src="${escHtml(cover)}" alt="${escHtml(p.title)}" loading="lazy">` : ''}
+        <div class="map-popup-body">
+          <p class="map-popup-location">${escHtml(city)}</p>
+          <h3 class="map-popup-title">${escHtml(p.title)}</h3>
+          <p class="map-popup-price"><strong>${priceStr}</strong> / nuit</p>
+          <button class="map-popup-btn" onclick="AureBooking.initBookingModal('${escHtml(p.id)}')">
+            Réserver
+          </button>
+        </div>
+      </div>`;
+
+    const marker = L.marker([p.location.lat, p.location.lng], { icon })
+      .addTo(_markersLayer)
+      .bindPopup(popupContent, { maxWidth: 240, minWidth: 200 });
+
+    marker.on('click', () => {
+      AureState.ui.activePropertyId = p.id;
+      AureState.emit('map:propertySelected', p);
+    });
+  });
+}
+
+function updateMapMarkers(properties) {
+  const available = (properties || []).filter(p => p.available !== false && p.location && p.location.lat);
+  _addMarkers(available);
+}
+
+
 /* ── Navigation ─────────────────────────────────────────────── */
+
 function initNav() {
   const nav = document.querySelector('.nav');
   if (!nav) return;
@@ -250,15 +479,22 @@ function initNav() {
   if (burger && mobileMenu) {
     burger.addEventListener('click', () => {
       mobileMenu.classList.toggle('open');
+      burger.classList.toggle('open');
       burger.setAttribute('aria-expanded', mobileMenu.classList.contains('open'));
     });
     mobileMenu.querySelectorAll('a').forEach(a => {
-      a.addEventListener('click', () => mobileMenu.classList.remove('open'));
+      a.addEventListener('click', () => {
+        mobileMenu.classList.remove('open');
+        burger.classList.remove('open');
+        burger.setAttribute('aria-expanded', 'false');
+      });
     });
   }
 }
 
+
 /* ── Newsletter ─────────────────────────────────────────────── */
+
 function initNewsletter() {
   const form = document.getElementById('newsletter-form');
   if (!form) return;
@@ -268,22 +504,24 @@ function initNewsletter() {
     const email = form.querySelector('input[type="email"]')?.value?.trim();
     if (!email) return;
 
-    const current = AureStorage.getData();
-    current.subscribers = current.subscribers || [];
+    const data = AureStorage.getData();
+    data.subscribers = data.subscribers || [];
 
-    if (current.subscribers.some(s => s.email === email)) {
+    if (data.subscribers.some(s => s.email === email)) {
       showToast('Cette adresse est déjà inscrite.', 'error');
       return;
     }
 
-    current.subscribers.push({ email, date: new Date().toISOString() });
-    AureStorage.saveData(current);
+    data.subscribers.push({ email, date: new Date().toISOString() });
+    AureStorage.saveData(data);
     form.reset();
     showToast('Merci\u00a0! Vous serez informé(e) en avant-première.', 'success');
   });
 }
 
-/* ── Formulaire contact (Formspree) ─────────────────────────── */
+
+/* ── Formulaire contact ─────────────────────────────────────── */
+
 function initContactForm(formspreeId) {
   const form = document.getElementById('contact-form');
   if (!form) return;
@@ -294,13 +532,12 @@ function initContactForm(formspreeId) {
 
   form.addEventListener('submit', async (e) => {
     e.preventDefault();
-    const submitBtn = form.querySelector('[type="submit"]');
+    const submitBtn  = form.querySelector('[type="submit"]');
+    const btnLabel   = submitBtn && submitBtn.querySelector('.btn-label');
     const successMsg = document.getElementById('contact-success');
 
-    if (submitBtn) {
-      submitBtn.disabled = true;
-      submitBtn.textContent = 'Envoi en cours…';
-    }
+    if (submitBtn) submitBtn.classList.add('loading');
+    if (btnLabel)  btnLabel.textContent = 'Envoi en cours…';
 
     try {
       const response = await fetch(form.action, {
@@ -315,44 +552,75 @@ function initContactForm(formspreeId) {
         showToast('Message envoyé avec succès\u00a0!', 'success');
         setTimeout(() => {
           if (successMsg) successMsg.classList.remove('show');
-        }, 6000);
+        }, 7000);
       } else {
         throw new Error('Erreur serveur');
       }
     } catch {
-      showToast('Une erreur est survenue. Veuillez réessayer ou nous contacter directement.', 'error');
+      showToast('Erreur. Contactez-nous directement à contact@aurelys.fr', 'error');
     } finally {
-      if (submitBtn) {
-        submitBtn.disabled = false;
-        submitBtn.textContent = 'Envoyer le message';
-      }
+      if (submitBtn) submitBtn.classList.remove('loading');
+      if (btnLabel)  btnLabel.textContent = 'Envoyer le message';
     }
   });
 }
 
-/* ── Animations d'entrée ────────────────────────────────────── */
+
+/* ── Animations fade-in ─────────────────────────────────────── */
+
+let _fadeObserver = null;
+
 function initFadeIn() {
-  const observer = new IntersectionObserver(
-    (entries) => {
-      entries.forEach(entry => {
-        if (entry.isIntersecting) {
-          entry.target.classList.add('visible');
-          observer.unobserve(entry.target);
-        }
-      });
-    },
-    { threshold: 0.12, rootMargin: '0px 0px -40px 0px' }
-  );
+  if (!_fadeObserver) {
+    _fadeObserver = new IntersectionObserver(
+      (entries) => {
+        entries.forEach(entry => {
+          if (entry.isIntersecting) {
+            entry.target.classList.add('visible');
+            _fadeObserver.unobserve(entry.target);
+          }
+        });
+      },
+      { threshold: 0.1, rootMargin: '0px 0px -40px 0px' }
+    );
+  }
 
-  document.querySelectorAll('.fade-in').forEach(el => observer.observe(el));
-
-  const mutObs = new MutationObserver(() => {
-    document.querySelectorAll('.fade-in:not(.visible)').forEach(el => observer.observe(el));
+  document.querySelectorAll('.fade-in:not(.visible)').forEach(el => {
+    _fadeObserver.observe(el);
   });
-  mutObs.observe(document.body, { childList: true, subtree: true });
 }
 
+
+/* ── Parallaxe légère sur le hero ───────────────────────────── */
+
+function initParallax() {
+  const heroContent = document.querySelector('.hero-content');
+  const heroWatermark = document.querySelector('.hero-watermark');
+  if (!heroContent) return;
+  if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
+
+  let ticking = false;
+  window.addEventListener('scroll', () => {
+    if (!ticking) {
+      requestAnimationFrame(() => {
+        const y = window.scrollY;
+        if (y < window.innerHeight) {
+          heroContent.style.transform = `translateY(${y * 0.18}px)`;
+          heroContent.style.opacity   = String(1 - y / (window.innerHeight * 0.75));
+          if (heroWatermark) {
+            heroWatermark.style.transform = `translateY(calc(-50% + ${y * 0.08}px)) rotate(90deg)`;
+          }
+        }
+        ticking = false;
+      });
+      ticking = true;
+    }
+  }, { passive: true });
+}
+
+
 /* ── Toast notifications ────────────────────────────────────── */
+
 function showToast(message, type = 'success') {
   let container = document.querySelector('.toast-container');
   if (!container) {
@@ -372,11 +640,13 @@ function showToast(message, type = 'success') {
 
   setTimeout(() => {
     toast.classList.remove('show');
-    setTimeout(() => toast.remove(), 400);
-  }, 4000);
+    setTimeout(() => toast.remove(), 450);
+  }, 4500);
 }
 
-/* ── Utilitaire : échapper le HTML ──────────────────────────── */
+
+/* ── Échappement HTML ───────────────────────────────────────── */
+
 function escHtml(str) {
   return String(str ?? '')
     .replace(/&/g, '&amp;')

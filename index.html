@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Achille &amp; Aurelys — Location de Prestige</title>
+  <meta name="description" content="Des résidences d'exception soigneusement sélectionnées pour vos séjours les plus précieux.">
+  <meta property="og:title" content="Achille &amp; Aurelys — Location de Prestige">
+  <meta property="og:type" content="website">
+
+  <!-- Polices -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+
+<!-- ── Navigation ──────────────────────────────────────────── -->
+<header class="nav" role="banner">
+  <div class="container nav-inner">
+    <a href="#" class="nav-logo" aria-label="Accueil">
+      <span data-text="siteName">Achille &amp; Aurelys</span>
+    </a>
+
+    <nav aria-label="Navigation principale">
+      <ul class="nav-links">
+        <li><a href="#logements">Logements</a></li>
+        <li><a href="#a-venir">À venir</a></li>
+        <li><a href="#a-propos">À propos</a></li>
+        <li><a href="#contact">Contact</a></li>
+        <li><a href="#contact" class="nav-cta">Réserver</a></li>
+      </ul>
+    </nav>
+
+    <button class="nav-burger" aria-label="Menu" aria-expanded="false" aria-controls="nav-mobile">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+
+  <!-- Menu mobile -->
+  <nav id="nav-mobile" class="nav-mobile" aria-label="Navigation mobile">
+    <a href="#logements">Logements</a>
+    <a href="#a-venir">À venir</a>
+    <a href="#a-propos">À propos</a>
+    <a href="#contact">Contact</a>
+    <a href="#contact" style="color:var(--gold)">Réserver</a>
+  </nav>
+</header>
+
+<!-- ── Hero ────────────────────────────────────────────────── -->
+<section class="hero" aria-label="Accueil">
+  <div class="hero-bg"></div>
+  <!-- Spotlight (alimenté par mouse-tracker.js) -->
+  <div id="hero-spotlight" aria-hidden="true"></div>
+
+  <div class="container" style="position:relative;z-index:3;width:100%;">
+    <div class="hero-content">
+      <div class="hero-eyebrow">
+        <span class="hero-eyebrow-line" aria-hidden="true"></span>
+        <span class="hero-eyebrow-text">Location de prestige</span>
+      </div>
+
+      <h1 class="hero-title" id="hero-title">
+        L'Art de Vivre<br><em>en Luxe</em>
+      </h1>
+
+      <p class="hero-subtitle" id="hero-subtitle">
+        Des résidences d'exception soigneusement sélectionnées pour vos séjours les plus précieux.
+      </p>
+
+      <div class="hero-actions">
+        <a href="#logements" class="btn btn-primary">
+          Découvrir nos logements
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+        <a href="#contact" class="btn btn-outline">Nous contacter</a>
+      </div>
+    </div>
+
+    <!-- Stats -->
+    <aside class="hero-stats" aria-label="Chiffres clés">
+      <div class="hero-stat">
+        <p class="hero-stat-number">3+</p>
+        <p class="hero-stat-label">Résidences</p>
+      </div>
+      <div class="hero-stat">
+        <p class="hero-stat-number">5★</p>
+        <p class="hero-stat-label">Expérience</p>
+      </div>
+      <div class="hero-stat">
+        <p class="hero-stat-number">FR</p>
+        <p class="hero-stat-label">Service</p>
+      </div>
+    </aside>
+  </div>
+
+  <!-- Indicateur de scroll -->
+  <div class="hero-scroll" aria-hidden="true">
+    <span class="hero-scroll-line"></span>
+    <span>Scroll</span>
+  </div>
+</section>
+
+<!-- ── Logements disponibles ───────────────────────────────── -->
+<section class="section properties" id="logements" aria-labelledby="properties-heading">
+  <div class="container">
+    <div class="properties-header">
+      <div>
+        <span class="section-label">Nos résidences</span>
+        <h2 class="section-title" id="properties-heading">Logements disponibles</h2>
+        <p class="section-subtitle">Chaque propriété est sélectionnée pour son caractère unique et ses prestations d'exception.</p>
+      </div>
+    </div>
+
+    <!-- Grille dynamique (alimentée par app.js) -->
+    <div class="properties-grid" id="properties-grid" aria-live="polite">
+      <!-- Placeholders -->
+      <div class="property-card skeleton" style="height:420px;" aria-hidden="true"></div>
+      <div class="property-card skeleton" style="height:420px;" aria-hidden="true"></div>
+      <div class="property-card skeleton" style="height:420px;" aria-hidden="true"></div>
+    </div>
+  </div>
+</section>
+
+<!-- ── À venir ─────────────────────────────────────────────── -->
+<section class="section upcoming" id="a-venir" id="upcoming-section" aria-labelledby="upcoming-heading">
+  <div class="container">
+    <div style="display:flex; align-items:flex-end; justify-content:space-between; margin-bottom:48px; gap:24px;">
+      <div>
+        <span class="section-label">Prochainement</span>
+        <h2 class="section-title" id="upcoming-heading">Nos futures adresses</h2>
+        <p class="section-subtitle">Inscrivez-vous à notre newsletter pour être informé en avant-première.</p>
+      </div>
+      <a href="#newsletter" class="btn btn-outline" style="flex-shrink:0;">
+        S'inscrire
+      </a>
+    </div>
+
+    <div class="upcoming-grid" id="upcoming-grid" aria-live="polite">
+      <!-- Alimenté par app.js -->
+    </div>
+  </div>
+</section>
+
+<!-- ── À propos ─────────────────────────────────────────────── -->
+<section class="section about" id="a-propos" aria-labelledby="about-heading">
+  <div class="container">
+    <div class="about-inner">
+      <div class="about-text fade-in">
+        <span class="section-label">Notre histoire</span>
+        <h2 class="section-title" id="about-heading about-title" id="about-title">Notre Vision du Luxe</h2>
+        <div class="divider" aria-hidden="true"></div>
+        <p class="about-body" id="about-body">
+          Achille &amp; Aurelys est né de la passion pour les espaces d'exception. Nous sélectionnons rigoureusement chaque résidence pour vous offrir une expérience incomparable, alliant luxe, confort et authenticité.
+        </p>
+        <a href="#contact" class="btn-ghost" style="margin-top:32px; display:inline-flex; align-items:center; gap:10px;">
+          Nous contacter
+          <svg class="arrow" width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+            <path d="M1 8h14M9 2l6 6-6 6" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+      </div>
+
+      <div class="about-img-wrap fade-in fade-in-delay-2">
+        <img
+          class="about-img"
+          src="https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=600&q=80"
+          alt="Intérieur d'une résidence de prestige"
+          loading="lazy"
+        >
+        <div class="about-img-accent" aria-hidden="true"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Newsletter ───────────────────────────────────────────── -->
+<section class="section-sm newsletter" id="newsletter" aria-labelledby="newsletter-heading">
+  <div class="container">
+    <div class="newsletter-inner">
+      <div>
+        <h2 class="newsletter-title" id="newsletter-title newsletter-heading">
+          Soyez informés en avant-première
+        </h2>
+        <p class="newsletter-text" id="newsletter-text">
+          Recevez nos nouvelles adresses et offres exclusives directement dans votre boîte mail.
+        </p>
+      </div>
+      <form class="newsletter-form" id="newsletter-form" novalidate aria-label="Inscription newsletter">
+        <label for="newsletter-email" class="sr-only">Votre adresse email</label>
+        <input
+          class="newsletter-input"
+          id="newsletter-email"
+          type="email"
+          name="email"
+          placeholder="Votre adresse email"
+          required
+          autocomplete="email"
+        >
+        <button type="submit" class="btn btn-primary">S'inscrire</button>
+      </form>
+    </div>
+  </div>
+</section>
+
+<!-- ── Contact & Avis ───────────────────────────────────────── -->
+<section class="section contact" id="contact" aria-labelledby="contact-heading">
+  <div class="container">
+    <div style="margin-bottom:60px; text-align:center;">
+      <span class="section-label">Contact</span>
+      <h2 class="section-title" id="contact-heading">Laissez-nous un message</h2>
+      <p class="section-subtitle" style="margin:0 auto;">Question, avis, demande particulière — nous vous répondons sous 24h.</p>
+    </div>
+
+    <div class="contact-grid">
+      <!-- Infos de contact -->
+      <aside>
+        <div class="contact-detail fade-in">
+          <div class="contact-icon" aria-hidden="true">✉</div>
+          <div>
+            <p class="contact-detail-label">Email</p>
+            <a href="mailto:contact@achille-aurelys.fr" class="contact-detail-value">
+              contact@achille-aurelys.fr
+            </a>
+          </div>
+        </div>
+        <div class="contact-detail fade-in fade-in-delay-1">
+          <div class="contact-icon" aria-hidden="true">☎</div>
+          <div>
+            <p class="contact-detail-label">Téléphone</p>
+            <p class="contact-detail-value">+33 1 00 00 00 00</p>
+          </div>
+        </div>
+        <div class="contact-detail fade-in fade-in-delay-2">
+          <div class="contact-icon" aria-hidden="true">📍</div>
+          <div>
+            <p class="contact-detail-label">Localisation</p>
+            <p class="contact-detail-value">Paris, France</p>
+          </div>
+        </div>
+      </aside>
+
+      <!-- Formulaire Formspree -->
+      <div class="fade-in">
+        <!-- L'action est mise à jour dynamiquement par app.js via l'ID Formspree -->
+        <form
+          id="contact-form"
+          class="form"
+          action="https://formspree.io/f/YOUR_FORMSPREE_ID"
+          method="POST"
+          novalidate
+        >
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label" for="contact-name">Nom complet</label>
+              <input class="form-input" id="contact-name" type="text" name="name" placeholder="Jean Dupont" required autocomplete="name">
+            </div>
+            <div class="form-group">
+              <label class="form-label" for="contact-email">Email</label>
+              <input class="form-input" id="contact-email" type="email" name="email" placeholder="jean@exemple.fr" required autocomplete="email">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="contact-subject">Sujet</label>
+            <select class="form-select" id="contact-subject" name="subject">
+              <option value="">Choisissez un sujet</option>
+              <option>Demande de réservation</option>
+              <option>Question sur un logement</option>
+              <option>Avis / Commentaire</option>
+              <option>Autre</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="contact-message">Message</label>
+            <textarea class="form-textarea" id="contact-message" name="message" placeholder="Votre message…" rows="5" required></textarea>
+          </div>
+
+          <div>
+            <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center;">
+              Envoyer le message
+            </button>
+          </div>
+
+          <!-- Message de confirmation -->
+          <div class="form-success" id="contact-success" role="alert" aria-live="polite">
+            ✓ Votre message a bien été envoyé. Nous vous répondrons dans les plus brefs délais.
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ── Footer ───────────────────────────────────────────────── -->
+<footer class="footer" role="contentinfo">
+  <div class="container">
+    <div class="footer-grid">
+      <!-- Marque -->
+      <div>
+        <p class="footer-brand-name">
+          <span data-text="footerBrand">Achille &amp; Aurelys</span>
+        </p>
+        <p class="footer-brand-desc">
+          Des résidences d'exception pour des séjours inoubliables. Service personnalisé, luxe et authenticité.
+        </p>
+        <div class="footer-social">
+          <a href="#" class="footer-social-link" data-href="instagram" aria-label="Instagram" rel="noopener">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="2" y="2" width="20" height="20" rx="5" ry="5"/>
+              <circle cx="12" cy="12" r="4"/>
+              <circle cx="17.5" cy="6.5" r="0.5" fill="currentColor"/>
+            </svg>
+          </a>
+          <a href="#" class="footer-social-link" data-href="linkedin" aria-label="LinkedIn" rel="noopener">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+              <rect x="2" y="2" width="20" height="20" rx="2"/>
+              <path d="M7 10v7M7 7v.01M12 10v7M12 13a3 3 0 016 0v4"/>
+            </svg>
+          </a>
+        </div>
+      </div>
+
+      <!-- Liens rapides -->
+      <nav aria-label="Liens rapides">
+        <p class="footer-col-title">Navigation</p>
+        <ul class="footer-links">
+          <li><a href="#logements">Logements</a></li>
+          <li><a href="#a-venir">À venir</a></li>
+          <li><a href="#a-propos">À propos</a></li>
+          <li><a href="#newsletter">Newsletter</a></li>
+          <li><a href="#contact">Contact</a></li>
+        </ul>
+      </nav>
+
+      <!-- Informations légales -->
+      <nav aria-label="Informations légales">
+        <p class="footer-col-title">Informations</p>
+        <ul class="footer-links">
+          <li><a href="legal.html?page=cgv">Conditions générales</a></li>
+          <li><a href="legal.html?page=privacy">Confidentialité</a></li>
+          <li><a href="legal.html?page=mentions">Mentions légales</a></li>
+          <li><a href="admin.html">Administration</a></li>
+        </ul>
+      </nav>
+    </div>
+
+    <div class="footer-bottom">
+      <p class="footer-copy">
+        &copy; <span id="footer-year"></span> Achille &amp; Aurelys. Tous droits réservés.
+      </p>
+      <nav class="footer-legal" aria-label="Liens légaux">
+        <a href="legal.html?page=cgv">Conditions générales</a>
+        <a href="legal.html?page=privacy">Confidentialité</a>
+        <a href="legal.html?page=mentions">Mentions légales</a>
+      </nav>
+    </div>
+  </div>
+</footer>
+
+<!-- ── Modal de réservation ─────────────────────────────────── -->
+<div id="reservation-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+  <div class="modal">
+    <div class="modal-header">
+      <h2 class="modal-title" id="modal-title">Demande de réservation</h2>
+      <button class="modal-close" onclick="closeReservationModal()" aria-label="Fermer">&times;</button>
+    </div>
+
+    <!-- Aperçu du logement sélectionné -->
+    <div class="modal-property-preview">
+      <img class="modal-prop-img" src="" alt="">
+      <div>
+        <p class="modal-prop-name"></p>
+        <p class="modal-prop-price"></p>
+      </div>
+    </div>
+
+    <div class="modal-redirect-info">
+      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
+        <circle cx="8" cy="8" r="7" stroke="#c9a96e" stroke-width="1.5"/>
+        <path d="M8 7v4M8 5v.5" stroke="#c9a96e" stroke-width="1.5" stroke-linecap="round"/>
+      </svg>
+      <span>Après soumission, vous serez redirigé(e) vers notre page de paiement sécurisé.</span>
+    </div>
+
+    <form id="reservation-form" novalidate>
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="res-name">Nom complet *</label>
+          <input class="form-input" id="res-name" name="name" type="text" required autocomplete="name" placeholder="Jean Dupont">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="res-email">Email *</label>
+          <input class="form-input" id="res-email" name="email" type="email" required autocomplete="email" placeholder="jean@exemple.fr">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="res-phone">Téléphone</label>
+          <input class="form-input" id="res-phone" name="phone" type="tel" autocomplete="tel" placeholder="+33 6 00 00 00 00">
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="res-guests">Nombre de voyageurs</label>
+          <input class="form-input" id="res-guests" name="guests" type="number" min="1" max="20" placeholder="2">
+        </div>
+      </div>
+
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label" for="res-checkin">Arrivée *</label>
+          <input class="form-input" id="res-checkin" name="checkin" type="date" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="res-checkout">Départ *</label>
+          <input class="form-input" id="res-checkout" name="checkout" type="date" required>
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label class="form-label" for="res-message">Message (optionnel)</label>
+        <textarea class="form-textarea" id="res-message" name="message" placeholder="Informations complémentaires, demandes spéciales…" rows="3"></textarea>
+      </div>
+
+      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; margin-top:8px;">
+        Confirmer et procéder au paiement
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+          <path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        </svg>
+      </button>
+    </form>
+  </div>
+</div>
+
+<!-- ── Scripts ──────────────────────────────────────────────── -->
+<script src="js/storage.js"></script>
+<script src="js/app.js"></script>
+<script src="js/mouse-tracker.js"></script>
+<script>
+  // Année dans le footer
+  document.getElementById('footer-year').textContent = new Date().getFullYear();
+
+  // Correction du double id sur about-title
+  const aboutTitleEl = document.getElementById('about-title');
+  // (résolu via app.js)
+</script>
+
+<!-- Classe sr-only pour accessibilité -->
+<style>
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    padding: 0;
+    margin: -1px;
+    overflow: hidden;
+    clip: rect(0,0,0,0);
+    border: 0;
+  }
+</style>
+
+</body>
+</html>

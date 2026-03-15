@@ -1,0 +1,651 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Administration — Achille &amp; Aurelys</title>
+  <!-- Pas de contenu du site public : page complètement indépendante -->
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="css/admin.css">
+</head>
+<body>
+
+<!-- ════════════════════════════════════════════════════════════
+     ÉCRAN DE CONNEXION (affiché en premier)
+═══════════════════════════════════════════════════════════════ -->
+<div id="admin-login" role="main" aria-label="Connexion administration">
+  <div class="login-box">
+    <h1 class="login-logo">Achille &amp; <span>Aurelys</span></h1>
+    <p class="login-subtitle">Administration</p>
+
+    <form id="login-form" novalidate>
+      <div class="login-field">
+        <label class="login-label" for="admin-password">Mot de passe</label>
+        <input
+          class="login-input"
+          id="admin-password"
+          type="password"
+          name="password"
+          placeholder="••••••••"
+          required
+          autocomplete="current-password"
+          autofocus
+        >
+      </div>
+      <button type="submit" class="login-btn">Se connecter</button>
+      <p class="login-error" id="login-error" role="alert">Mot de passe incorrect.</p>
+    </form>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     APPLICATION ADMIN (masquée jusqu'à la connexion)
+═══════════════════════════════════════════════════════════════ -->
+<div id="admin-app" role="main" aria-label="Panel d'administration">
+
+  <!-- ── Sidebar ──────────────────────────────────────────── -->
+  <aside class="admin-sidebar" role="navigation" aria-label="Navigation admin">
+    <div class="sidebar-header">
+      <p class="sidebar-brand">A &amp; <span>A</span></p>
+      <span class="sidebar-badge">Administration</span>
+    </div>
+
+    <nav class="sidebar-nav" aria-label="Sections admin">
+      <p class="nav-section-label">Général</p>
+
+      <button class="nav-item active" data-panel="dashboard" onclick="loadPanel('dashboard')" aria-current="page">
+        <span class="nav-item-icon" aria-hidden="true">▦</span>
+        Tableau de bord
+      </button>
+
+      <div class="nav-separator" role="separator"></div>
+      <p class="nav-section-label">Contenu</p>
+
+      <button class="nav-item" data-panel="properties" onclick="loadPanel('properties')">
+        <span class="nav-item-icon" aria-hidden="true">🏠</span>
+        Logements
+      </button>
+
+      <button class="nav-item" data-panel="upcoming" onclick="loadPanel('upcoming')">
+        <span class="nav-item-icon" aria-hidden="true">📅</span>
+        À venir
+      </button>
+
+      <button class="nav-item" data-panel="texts" onclick="loadPanel('texts')">
+        <span class="nav-item-icon" aria-hidden="true">✏</span>
+        Textes du site
+      </button>
+
+      <button class="nav-item" data-panel="legal" onclick="loadPanel('legal')">
+        <span class="nav-item-icon" aria-hidden="true">📄</span>
+        Pages légales
+      </button>
+
+      <button class="nav-item" data-panel="payment" onclick="loadPanel('payment')">
+        <span class="nav-item-icon" aria-hidden="true">💳</span>
+        Liens de paiement
+      </button>
+
+      <div class="nav-separator" role="separator"></div>
+      <p class="nav-section-label">Données</p>
+
+      <button class="nav-item" data-panel="newsletter" onclick="loadPanel('newsletter')">
+        <span class="nav-item-icon" aria-hidden="true">✉</span>
+        Newsletter
+      </button>
+
+      <button class="nav-item" data-panel="reservations" onclick="loadPanel('reservations')">
+        <span class="nav-item-icon" aria-hidden="true">📋</span>
+        Réservations
+      </button>
+
+      <div class="nav-separator" role="separator"></div>
+
+      <button class="nav-item" data-panel="settings" onclick="loadPanel('settings')">
+        <span class="nav-item-icon" aria-hidden="true">⚙</span>
+        Paramètres
+      </button>
+    </nav>
+
+    <div class="sidebar-footer">
+      <a href="index.html" class="sidebar-footer-btn" target="_blank" rel="noopener">
+        <span aria-hidden="true">↗</span> Voir le site
+      </a>
+      <button class="sidebar-footer-btn" onclick="exportBackup()">
+        <span aria-hidden="true">⬇</span> Sauvegarder
+      </button>
+      <button class="sidebar-footer-btn" onclick="importBackup()">
+        <span aria-hidden="true">⬆</span> Importer
+      </button>
+      <button class="sidebar-footer-btn danger" onclick="logout()">
+        <span aria-hidden="true">⏻</span> Se déconnecter
+      </button>
+    </div>
+  </aside>
+
+  <!-- ── Contenu principal ──────────────────────────────── -->
+  <div class="admin-main">
+
+    <!-- Topbar -->
+    <div class="admin-topbar">
+      <h2 class="admin-topbar-title" id="topbar-title">Tableau de bord</h2>
+      <div class="admin-topbar-actions">
+        <a href="index.html" class="btn btn-secondary btn-sm" target="_blank" rel="noopener">
+          ↗ Voir le site
+        </a>
+      </div>
+    </div>
+
+    <div class="admin-content">
+
+      <!-- ══ DASHBOARD ══════════════════════════════════════ -->
+      <div id="panel-dashboard" class="admin-panel active">
+        <div class="stats-grid">
+          <div class="stat-card">
+            <div>
+              <p class="stat-card-value" id="stat-properties">—</p>
+              <p class="stat-card-label">Logements actifs</p>
+            </div>
+            <span class="stat-card-icon" aria-hidden="true">🏠</span>
+          </div>
+          <div class="stat-card">
+            <div>
+              <p class="stat-card-value" id="stat-upcoming">—</p>
+              <p class="stat-card-label">À venir</p>
+            </div>
+            <span class="stat-card-icon" aria-hidden="true">📅</span>
+          </div>
+          <div class="stat-card">
+            <div>
+              <p class="stat-card-value" id="stat-subscribers">—</p>
+              <p class="stat-card-label">Abonnés newsletter</p>
+            </div>
+            <span class="stat-card-icon" aria-hidden="true">✉</span>
+          </div>
+          <div class="stat-card">
+            <div>
+              <p class="stat-card-value" id="stat-reservations">—</p>
+              <p class="stat-card-label">Réservations</p>
+            </div>
+            <span class="stat-card-icon" aria-hidden="true">📋</span>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-header">
+            <p class="card-title">
+              <span class="card-title-icon" aria-hidden="true">⚡</span>
+              Accès rapides
+            </p>
+          </div>
+          <div style="display:flex; flex-wrap:wrap; gap:10px;">
+            <button class="btn btn-primary" onclick="loadPanel('properties')">Gérer les logements</button>
+            <button class="btn btn-secondary" onclick="loadPanel('texts')">Modifier les textes</button>
+            <button class="btn btn-secondary" onclick="loadPanel('legal')">Pages légales</button>
+            <button class="btn btn-secondary" onclick="loadPanel('newsletter')">Voir les abonnés</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ LOGEMENTS ═════════════════════════════════════ -->
+      <div id="panel-properties" class="admin-panel">
+        <div class="card">
+          <div class="card-header">
+            <p class="card-title">
+              <span class="card-title-icon" aria-hidden="true">🏠</span>
+              Logements disponibles
+            </p>
+            <button class="btn btn-primary" onclick="openAddProperty()">
+              + Ajouter
+            </button>
+          </div>
+          <div class="prop-list" id="properties-list" aria-live="polite">
+            <!-- Alimenté par admin.js -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ À VENIR ════════════════════════════════════════ -->
+      <div id="panel-upcoming" class="admin-panel">
+        <div class="card">
+          <div class="card-header">
+            <p class="card-title">
+              <span class="card-title-icon" aria-hidden="true">📅</span>
+              Logements à venir
+            </p>
+            <button class="btn btn-primary" onclick="openAddUpcoming()">
+              + Ajouter
+            </button>
+          </div>
+          <div class="prop-list" id="upcoming-list" aria-live="polite">
+            <!-- Alimenté par admin.js -->
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ TEXTES ══════════════════════════════════════════ -->
+      <div id="panel-texts" class="admin-panel">
+        <div class="card">
+          <div class="card-header">
+            <p class="card-title">
+              <span class="card-title-icon" aria-hidden="true">✏</span>
+              Textes du site
+            </p>
+            <button class="btn btn-primary" onclick="saveTexts()">Sauvegarder</button>
+          </div>
+
+          <p style="font-size:12px; color:var(--text-dim); margin-bottom:24px;">
+            Les modifications sont appliquées immédiatement sur le site public.
+          </p>
+
+          <div class="field-row" style="margin-bottom:0;">
+            <div class="field">
+              <label class="field-label field-required" for="text-site-name">Nom du site</label>
+              <input class="field-input" id="text-site-name" type="text" placeholder="Achille &amp; Aurelys">
+            </div>
+            <div class="field">
+              <label class="field-label" for="text-tagline">Tagline</label>
+              <input class="field-input" id="text-tagline" type="text" placeholder="Location de Prestige">
+            </div>
+          </div>
+
+          <hr style="border:none; border-top:1px solid var(--border); margin:20px 0;">
+          <p style="font-size:11px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-muted); margin-bottom:16px;">Section Hero</p>
+
+          <div class="field">
+            <label class="field-label" for="text-hero-title">Titre principal</label>
+            <input class="field-input" id="text-hero-title" type="text" placeholder="L'Art de Vivre en Luxe">
+            <p class="field-hint">Ajoutez un saut de ligne (\n) pour mettre la deuxième ligne en italique doré.</p>
+          </div>
+          <div class="field">
+            <label class="field-label" for="text-hero-subtitle">Sous-titre</label>
+            <textarea class="field-textarea" id="text-hero-subtitle" rows="2" placeholder="Des résidences d'exception…"></textarea>
+          </div>
+
+          <hr style="border:none; border-top:1px solid var(--border); margin:20px 0;">
+          <p style="font-size:11px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-muted); margin-bottom:16px;">Section À propos</p>
+
+          <div class="field">
+            <label class="field-label" for="text-about-title">Titre</label>
+            <input class="field-input" id="text-about-title" type="text">
+          </div>
+          <div class="field">
+            <label class="field-label" for="text-about-body">Texte</label>
+            <textarea class="field-textarea" id="text-about-body" rows="5"></textarea>
+          </div>
+
+          <hr style="border:none; border-top:1px solid var(--border); margin:20px 0;">
+          <p style="font-size:11px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-muted); margin-bottom:16px;">Newsletter</p>
+
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label" for="text-newsletter-title">Titre</label>
+              <input class="field-input" id="text-newsletter-title" type="text">
+            </div>
+            <div class="field">
+              <label class="field-label" for="text-newsletter-text">Texte</label>
+              <input class="field-input" id="text-newsletter-text" type="text">
+            </div>
+          </div>
+
+          <hr style="border:none; border-top:1px solid var(--border); margin:20px 0;">
+          <p style="font-size:11px; font-weight:600; letter-spacing:0.1em; text-transform:uppercase; color:var(--text-muted); margin-bottom:16px;">Contact &amp; Réseaux</p>
+
+          <div class="field-row field-row-3">
+            <div class="field">
+              <label class="field-label" for="text-contact-email">Email</label>
+              <input class="field-input" id="text-contact-email" type="email">
+            </div>
+            <div class="field">
+              <label class="field-label" for="text-phone">Téléphone</label>
+              <input class="field-input" id="text-phone" type="text">
+            </div>
+            <div class="field">
+              <label class="field-label" for="text-address">Adresse</label>
+              <input class="field-input" id="text-address" type="text">
+            </div>
+          </div>
+
+          <div class="field">
+            <label class="field-label" for="text-formspree">ID Formspree (formulaire de contact)</label>
+            <input class="field-input" id="text-formspree" type="text" placeholder="abcde123">
+            <p class="field-hint">Trouvez votre ID sur <strong>formspree.io</strong> dans les paramètres de votre formulaire.</p>
+          </div>
+
+          <div class="field-row">
+            <div class="field">
+              <label class="field-label" for="text-instagram">Lien Instagram</label>
+              <input class="field-input" id="text-instagram" type="url" placeholder="https://instagram.com/...">
+            </div>
+            <div class="field">
+              <label class="field-label" for="text-linkedin">Lien LinkedIn</label>
+              <input class="field-input" id="text-linkedin" type="url" placeholder="https://linkedin.com/...">
+            </div>
+          </div>
+
+          <div style="margin-top:8px; text-align:right;">
+            <button class="btn btn-primary" onclick="saveTexts()">Sauvegarder tous les textes</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PAGES LÉGALES ══════════════════════════════════ -->
+      <div id="panel-legal" class="admin-panel">
+        <div class="card">
+          <div class="card-header">
+            <p class="card-title">
+              <span class="card-title-icon" aria-hidden="true">📄</span>
+              Pages légales
+            </p>
+            <button class="btn btn-primary" onclick="saveLegal()">Sauvegarder</button>
+          </div>
+
+          <p style="font-size:12px; color:var(--text-dim); margin-bottom:20px;">
+            Éditez les textes en Markdown. Ils seront affichés sur la page <code>legal.html</code>.
+          </p>
+
+          <!-- Onglets -->
+          <div class="legal-tabs" role="tablist" aria-label="Pages légales">
+            <button class="legal-tab active" data-tab="cgv" role="tab" aria-selected="true" onclick="switchLegalTab('cgv')">CGV</button>
+            <button class="legal-tab" data-tab="privacy" role="tab" aria-selected="false" onclick="switchLegalTab('privacy')">Confidentialité</button>
+            <button class="legal-tab" data-tab="mentions" role="tab" aria-selected="false" onclick="switchLegalTab('mentions')">Mentions légales</button>
+          </div>
+
+          <textarea
+            id="legal-editor"
+            class="legal-editor"
+            placeholder="Contenu de la page en Markdown…"
+            aria-label="Éditeur de contenu légal"
+          ></textarea>
+
+          <div style="margin-top:16px; display:flex; justify-content:space-between; align-items:center;">
+            <p style="font-size:12px; color:var(--text-dim);">Utilisez # pour les titres, ## pour les sous-titres, **texte** pour le gras.</p>
+            <button class="btn btn-primary" onclick="saveLegal()">Sauvegarder</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ LIENS DE PAIEMENT ══════════════════════════════ -->
+      <div id="panel-payment" class="admin-panel">
+        <div class="card">
+          <div class="card-header">
+            <p class="card-title">
+              <span class="card-title-icon" aria-hidden="true">💳</span>
+              Liens de paiement
+            </p>
+            <button class="btn btn-primary" onclick="savePaymentLinks()">Sauvegarder</button>
+          </div>
+
+          <p style="font-size:12px; color:var(--text-dim); margin-bottom:24px;">
+            Configurez un lien de paiement Stripe (ou autre) pour chaque logement. Ce lien sera utilisé lors de la réservation.
+          </p>
+
+          <div id="payment-links-list" aria-live="polite">
+            <!-- Alimenté par admin.js -->
+          </div>
+
+          <div style="margin-top:8px; text-align:right;">
+            <button class="btn btn-primary" onclick="savePaymentLinks()">Sauvegarder les liens</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ NEWSLETTER ═════════════════════════════════════ -->
+      <div id="panel-newsletter" class="admin-panel">
+        <div class="card">
+          <div class="card-header">
+            <p class="card-title">
+              <span class="card-title-icon" aria-hidden="true">✉</span>
+              Abonnés newsletter
+            </p>
+            <div style="display:flex; align-items:center; gap:10px;">
+              <span id="subscribers-count" style="font-size:12px; color:var(--text-muted);"></span>
+              <button class="btn btn-secondary" onclick="exportSubscribers()">⬇ Export CSV</button>
+            </div>
+          </div>
+
+          <div style="overflow-x:auto;">
+            <table class="data-table" aria-label="Liste des abonnés">
+              <thead>
+                <tr>
+                  <th>#</th>
+                  <th>Email</th>
+                  <th>Date d'inscription</th>
+                </tr>
+              </thead>
+              <tbody id="subscribers-body">
+                <!-- Alimenté par admin.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ RÉSERVATIONS ═══════════════════════════════════ -->
+      <div id="panel-reservations" class="admin-panel">
+        <div class="card">
+          <div class="card-header">
+            <p class="card-title">
+              <span class="card-title-icon" aria-hidden="true">📋</span>
+              Demandes de réservation
+            </p>
+          </div>
+
+          <div style="overflow-x:auto;">
+            <table class="data-table" aria-label="Liste des réservations">
+              <thead>
+                <tr>
+                  <th>Date</th>
+                  <th>Logement</th>
+                  <th>Client</th>
+                  <th>Email</th>
+                  <th>Séjour</th>
+                  <th>Statut</th>
+                </tr>
+              </thead>
+              <tbody id="reservations-body">
+                <!-- Alimenté par admin.js -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ PARAMÈTRES ════════════════════════════════════ -->
+      <div id="panel-settings" class="admin-panel">
+        <div class="card">
+          <div class="card-header">
+            <p class="card-title">
+              <span class="card-title-icon" aria-hidden="true">⚙</span>
+              Paramètres
+            </p>
+          </div>
+
+          <div style="max-width:480px;">
+            <div class="field">
+              <label class="field-label field-required" for="settings-password">Mot de passe administration</label>
+              <input class="field-input" id="settings-password" type="text" placeholder="••••••••">
+              <p class="field-hint">Minimum 6 caractères. Notez-le soigneusement.</p>
+            </div>
+
+            <button class="btn btn-primary" onclick="saveSettings()" style="margin-bottom:32px;">
+              Sauvegarder le mot de passe
+            </button>
+          </div>
+
+          <hr style="border:none; border-top:1px solid var(--border); margin:0 0 24px;">
+
+          <div class="card" style="border-color:rgba(224,92,92,0.2); background:rgba(224,92,92,0.04);">
+            <div class="card-header" style="margin-bottom:16px; padding-bottom:16px;">
+              <p class="card-title" style="color:var(--danger);">Zone dangereuse</p>
+            </div>
+            <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">
+              Réinitialiser toutes les données aux valeurs par défaut. Cette action est <strong>irréversible</strong>.
+            </p>
+            <button class="btn btn-danger" onclick="confirmResetData()">
+              Réinitialiser toutes les données
+            </button>
+          </div>
+        </div>
+      </div>
+
+    </div><!-- fin admin-content -->
+  </div><!-- fin admin-main -->
+</div><!-- fin admin-app -->
+
+<!-- ════════════════════════════════════════════════════════════
+     MODAL : Ajouter / Modifier un logement
+═══════════════════════════════════════════════════════════════ -->
+<div id="prop-modal" class="admin-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="prop-modal-title">
+  <div class="admin-modal">
+    <div class="admin-modal-header">
+      <h3 class="admin-modal-title" id="prop-modal-title">Ajouter un logement</h3>
+      <button class="admin-modal-close" onclick="closeModal('prop-modal')" aria-label="Fermer">&times;</button>
+    </div>
+    <div class="admin-modal-body">
+
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label field-required" for="prop-name">Nom</label>
+          <input class="field-input" id="prop-name" type="text" placeholder="Villa Lumière">
+        </div>
+        <div class="field">
+          <label class="field-label" for="prop-location">Localisation</label>
+          <input class="field-input" id="prop-location" type="text" placeholder="Côte d'Azur, France">
+        </div>
+      </div>
+
+      <div class="field-row field-row-3">
+        <div class="field">
+          <label class="field-label" for="prop-price">Prix</label>
+          <input class="field-input" id="prop-price" type="number" min="0" placeholder="450">
+        </div>
+        <div class="field">
+          <label class="field-label" for="prop-currency">Devise</label>
+          <select class="field-select" id="prop-currency">
+            <option value="€">€ Euro</option>
+            <option value="$">$ Dollar</option>
+            <option value="£">£ Livre</option>
+          </select>
+        </div>
+        <div class="field">
+          <label class="field-label" for="prop-period">Par</label>
+          <select class="field-select" id="prop-period">
+            <option value="nuit">nuit</option>
+            <option value="semaine">semaine</option>
+            <option value="mois">mois</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="prop-description">Description</label>
+        <textarea class="field-textarea" id="prop-description" rows="4" placeholder="Description détaillée du logement…"></textarea>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="prop-image">URL de l'image principale</label>
+        <input class="field-input" id="prop-image" type="url" placeholder="https://images.unsplash.com/...">
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="prop-features">Caractéristiques (une par ligne)</label>
+        <textarea class="field-textarea" id="prop-features" rows="4" placeholder="5 chambres&#10;Piscine à débordement&#10;Vue mer&#10;Terrasse"></textarea>
+      </div>
+
+      <div class="field-row field-row-3">
+        <div class="field">
+          <label class="field-label" for="prop-bedrooms">Chambres</label>
+          <input class="field-input" id="prop-bedrooms" type="number" min="0" placeholder="5">
+        </div>
+        <div class="field">
+          <label class="field-label" for="prop-bathrooms">Salles de bain</label>
+          <input class="field-input" id="prop-bathrooms" type="number" min="0" placeholder="3">
+        </div>
+        <div class="field">
+          <label class="field-label" for="prop-max-guests">Voyageurs max</label>
+          <input class="field-input" id="prop-max-guests" type="number" min="1" placeholder="10">
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="prop-area">Surface (m²)</label>
+        <input class="field-input" id="prop-area" type="number" min="0" placeholder="350">
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="prop-payment-link">Lien de paiement Stripe</label>
+        <input class="field-input" id="prop-payment-link" type="url" placeholder="https://buy.stripe.com/...">
+        <p class="field-hint">Optionnel. Si renseigné, le visiteur sera redirigé vers ce lien après sa demande de réservation.</p>
+      </div>
+
+      <div class="field">
+        <div class="toggle-wrap">
+          <label class="toggle" for="prop-available">
+            <input type="checkbox" id="prop-available" checked>
+            <span class="toggle-slider"></span>
+          </label>
+          <span class="toggle-label">Logement disponible</span>
+        </div>
+      </div>
+    </div>
+    <div class="admin-modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('prop-modal')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveProperty()">Sauvegarder</button>
+    </div>
+  </div>
+</div>
+
+<!-- ════════════════════════════════════════════════════════════
+     MODAL : Ajouter / Modifier un logement à venir
+═══════════════════════════════════════════════════════════════ -->
+<div id="upcoming-modal" class="admin-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="upcoming-modal-title">
+  <div class="admin-modal">
+    <div class="admin-modal-header">
+      <h3 class="admin-modal-title" id="upcoming-modal-title">Ajouter un logement à venir</h3>
+      <button class="admin-modal-close" onclick="closeModal('upcoming-modal')" aria-label="Fermer">&times;</button>
+    </div>
+    <div class="admin-modal-body">
+      <div class="field-row">
+        <div class="field">
+          <label class="field-label field-required" for="upcoming-name">Nom</label>
+          <input class="field-input" id="upcoming-name" type="text" placeholder="Chalet Mont-Blanc">
+        </div>
+        <div class="field">
+          <label class="field-label" for="upcoming-location">Localisation</label>
+          <input class="field-input" id="upcoming-location" type="text" placeholder="Chamonix, France">
+        </div>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="upcoming-date">Date de disponibilité (AAAA-MM)</label>
+        <input class="field-input" id="upcoming-date" type="month" placeholder="2026-12">
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="upcoming-description">Description</label>
+        <textarea class="field-textarea" id="upcoming-description" rows="3" placeholder="Courte description…"></textarea>
+      </div>
+
+      <div class="field">
+        <label class="field-label" for="upcoming-image">URL de l'image</label>
+        <input class="field-input" id="upcoming-image" type="url" placeholder="https://images.unsplash.com/...">
+      </div>
+    </div>
+    <div class="admin-modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('upcoming-modal')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveUpcoming()">Sauvegarder</button>
+    </div>
+  </div>
+</div>
+
+<!-- ── Scripts ──────────────────────────────────────────────── -->
+<script src="js/storage.js"></script>
+<script src="js/admin.js"></script>
+
+</body>
+</html>

@@ -363,106 +363,16 @@
   </div>
 </footer>
 
-<!-- ── Modal de réservation ─────────────────────────────────── -->
-<div id="reservation-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
-  <div class="modal">
-    <div class="modal-header">
-      <h2 class="modal-title" id="modal-title">Demande de réservation</h2>
-      <button class="modal-close" onclick="closeReservationModal()" aria-label="Fermer">&times;</button>
-    </div>
-
-    <!-- Aperçu du logement sélectionné -->
-    <div class="modal-property-preview">
-      <img class="modal-prop-img" src="" alt="">
-      <div>
-        <p class="modal-prop-name"></p>
-        <p class="modal-prop-price"></p>
-      </div>
-    </div>
-
-    <div class="modal-redirect-info">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" aria-hidden="true">
-        <circle cx="8" cy="8" r="7" stroke="#c9a96e" stroke-width="1.5"/>
-        <path d="M8 7v4M8 5v.5" stroke="#c9a96e" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>
-      <span>Après soumission, vous serez redirigé(e) vers notre page de paiement sécurisé.</span>
-    </div>
-
-    <form id="reservation-form" novalidate>
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label" for="res-name">Nom complet *</label>
-          <input class="form-input" id="res-name" name="name" type="text" required autocomplete="name" placeholder="Jean Dupont">
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="res-email">Email *</label>
-          <input class="form-input" id="res-email" name="email" type="email" required autocomplete="email" placeholder="jean@exemple.fr">
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label" for="res-phone">Téléphone</label>
-          <input class="form-input" id="res-phone" name="phone" type="tel" autocomplete="tel" placeholder="+33 6 00 00 00 00">
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="res-guests">Nombre de voyageurs</label>
-          <input class="form-input" id="res-guests" name="guests" type="number" min="1" max="20" placeholder="2">
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div class="form-group">
-          <label class="form-label" for="res-checkin">Arrivée *</label>
-          <input class="form-input" id="res-checkin" name="checkin" type="date" required>
-        </div>
-        <div class="form-group">
-          <label class="form-label" for="res-checkout">Départ *</label>
-          <input class="form-input" id="res-checkout" name="checkout" type="date" required>
-        </div>
-      </div>
-
-      <div class="form-group">
-        <label class="form-label" for="res-message">Message (optionnel)</label>
-        <textarea class="form-textarea" id="res-message" name="message" placeholder="Informations complémentaires, demandes spéciales…" rows="3"></textarea>
-      </div>
-
-      <button type="submit" class="btn btn-primary" style="width:100%; justify-content:center; margin-top:8px;">
-        Confirmer et procéder au paiement
-        <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-          <path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-        </svg>
-      </button>
-    </form>
-  </div>
-</div>
-
 <!-- ── Scripts ──────────────────────────────────────────────── -->
 <script src="js/storage.js"></script>
+<script src="js/state.js"></script>
+<script src="js/booking.js"></script>
 <script src="js/app.js"></script>
 <script src="js/mouse-tracker.js"></script>
 <script>
-  // Année dans le footer
   document.getElementById('footer-year').textContent = new Date().getFullYear();
-
-  // Correction du double id sur about-title
-  const aboutTitleEl = document.getElementById('about-title');
-  // (résolu via app.js)
 </script>
 
-<!-- Classe sr-only pour accessibilité -->
-<style>
-  .sr-only {
-    position: absolute;
-    width: 1px;
-    height: 1px;
-    padding: 0;
-    margin: -1px;
-    overflow: hidden;
-    clip: rect(0,0,0,0);
-    border: 0;
-  }
-</style>
 
 </body>
 </html>

@@ -1,0 +1,144 @@
+/* =============================================================
+   tokens.css — Système de design AURELYS
+   Source unique de vérité pour toutes les valeurs de style
+   ============================================================= */
+
+:root {
+
+  /* ── Palette de couleurs AURELYS ────────────────────────── */
+
+  /* Fonds */
+  --color-bg-base:      #07091a;   /* Fond principal (navy profond) */
+  --color-bg-surface:   #0d1428;   /* Surfaces élevées */
+  --color-bg-elevated:  #121c34;   /* Cards, modales */
+  --color-bg-overlay:   #182040;   /* Overlays */
+
+  /* Texte */
+  --color-text-primary:   #f0ede8;  /* Texte principal (blanc chaud) */
+  --color-text-secondary: #a8b0c0;  /* Texte secondaire */
+  --color-text-muted:     #5e6880;  /* Texte désactivé */
+  --color-text-dim:       #3a4258;  /* Très atténué */
+
+  /* Accent sable (chaleureux, AURELYS) */
+  --color-sand-50:  #faf8f5;
+  --color-sand-100: #f2ede6;
+  --color-sand-200: #e0d6c8;
+  --color-sand-300: #c9baa8;
+  --color-sand-400: #b09c87;
+  --color-sand-500: #967e68;  /* Accent principal */
+  --color-sand-600: #7d6555;
+
+  /* Alias sémantiques */
+  --color-accent:       var(--color-sand-300);
+  --color-accent-hover: var(--color-sand-200);
+  --color-accent-dim:   rgba(201, 186, 168, 0.12);
+  --color-accent-glow:  rgba(201, 186, 168, 0.06);
+
+  /* Bordures */
+  --color-border:       rgba(180, 200, 240, 0.07);
+  --color-border-soft:  rgba(180, 200, 240, 0.04);
+  --color-border-focus: rgba(201, 186, 168, 0.35);
+  --color-border-hover: rgba(180, 200, 240, 0.14);
+
+  /* États */
+  --color-success:     #6b9e7a;
+  --color-success-dim: rgba(107, 158, 122, 0.12);
+  --color-error:       #c47070;
+  --color-error-dim:   rgba(196, 112, 112, 0.12);
+  --color-warning:     #c4a857;
+  --color-warning-dim: rgba(196, 168, 87, 0.12);
+
+  /* ── Typographie ────────────────────────────────────────── */
+
+  --font-serif: 'Cormorant Garamond', 'Playfair Display', Georgia, serif;
+  --font-sans:  'Inter', 'DM Sans', system-ui, -apple-system, sans-serif;
+  --font-mono:  'JetBrains Mono', 'Courier New', monospace;
+
+  /* Échelle typographique */
+  --text-xs:   0.6875rem;  /* 11px */
+  --text-sm:   0.8125rem;  /* 13px */
+  --text-base: 1rem;       /* 16px */
+  --text-md:   1.125rem;   /* 18px */
+  --text-lg:   1.25rem;    /* 20px */
+  --text-xl:   1.5rem;     /* 24px */
+  --text-2xl:  2rem;       /* 32px */
+  --text-3xl:  2.5rem;     /* 40px */
+  --text-4xl:  3.25rem;    /* 52px */
+  --text-5xl:  4.25rem;    /* 68px */
+  --text-6xl:  5.5rem;     /* 88px */
+
+  /* Graisses */
+  --weight-light:   300;
+  --weight-regular: 400;
+  --weight-medium:  500;
+  --weight-semibold: 600;
+
+  /* ── Espacements ────────────────────────────────────────── */
+
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+  --space-32: 128px;
+
+  /* ── Rayons de bordure ──────────────────────────────────── */
+
+  --radius-sm: 6px;
+  --radius:    10px;
+  --radius-md: 14px;
+  --radius-lg: 20px;
+  --radius-xl: 28px;
+  --radius-full: 9999px;
+
+  /* ── Ombres ─────────────────────────────────────────────── */
+
+  --shadow-sm: 0 1px 3px rgba(0,0,0,0.3);
+  --shadow:    0 4px 16px rgba(0,0,0,0.4);
+  --shadow-lg: 0 12px 40px rgba(0,0,0,0.5);
+  --shadow-xl: 0 24px 64px rgba(0,0,0,0.6);
+
+  /* ── Transitions ────────────────────────────────────────── */
+
+  --ease-default: cubic-bezier(0.4, 0, 0.2, 1);
+  --ease-in:      cubic-bezier(0.4, 0, 1, 1);
+  --ease-out:     cubic-bezier(0, 0, 0.2, 1);
+  --ease-spring:  cubic-bezier(0.34, 1.56, 0.64, 1);
+
+  --duration-fast:   150ms;
+  --duration-base:   250ms;
+  --duration-slow:   400ms;
+  --duration-slower: 700ms;
+
+  --transition: var(--duration-base) var(--ease-default);
+  --transition-fast: var(--duration-fast) var(--ease-default);
+  --transition-slow: var(--duration-slow) var(--ease-default);
+
+  /* ── Mise en page ───────────────────────────────────────── */
+
+  --container-max: 1200px;
+  --container-narrow: 800px;
+  --sidebar-width: 264px;
+  --nav-height: 72px;
+
+  /* ── Vague AURELYS (élément de marque) ──────────────────── */
+  /* Utilisé comme séparateur décoratif */
+  --wave-opacity: 0.08;
+}
+
+/* Réduction de mouvement */
+@media (prefers-reduced-motion: reduce) {
+  :root {
+    --duration-fast:   0ms;
+    --duration-base:   0ms;
+    --duration-slow:   0ms;
+    --duration-slower: 0ms;
+  }
+}

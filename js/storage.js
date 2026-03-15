@@ -1,272 +1,566 @@
 /**
- * storage.js — Couche de persistance des données
- * Utilise localStorage pour être compatible Netlify (sans backend)
+ * storage.js — Couche de persistance AURELYS v2
+ *
+ * Architecture :
+ * - Schéma de données complet et versionné
+ * - Couche d'abstraction prête pour migration Supabase / Firebase
+ * - Séparation claire : contenu | logements | réservations | paramètres
+ * - Synchronisation multi-onglets via StorageEvent
  */
 
-const STORAGE_KEY = 'achille_aurelys_v1';
+const STORAGE_KEY = 'aurelys_v2';
+const STORAGE_VERSION = 2;
+
+/* ================================================================
+   SCHÉMA PAR DÉFAUT
+   ================================================================ */
 
 const DEFAULT_DATA = {
-  version: 1,
+  _version: STORAGE_VERSION,
+  _updatedAt: null,
+
+  /* ── Logements ─────────────────────────────────────────── */
   properties: [
     {
       id: 'prop_1',
-      name: 'Villa Lumière',
-      location: "Côte d'Azur, France",
-      price: 450,
-      currency: '€',
-      period: 'nuit',
-      description: "Une villa d'exception avec vue mer panoramique. Nichée dans les hauteurs de la Côte d'Azur, cette résidence de prestige offre cinq chambres somptueuses, une piscine à débordement et une terrasse panoramique à couper le souffle.",
-      shortDescription: "Villa prestige avec vue mer panoramique",
-      image: 'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=800&q=80',
+      slug: 'appartement-canal-saint-martin',
+      title: 'Appartement Canal Saint-Martin',
+      subtitle: 'Loft industriel avec vue sur le canal',
+      description: "Un loft d'exception niché au bord du Canal Saint-Martin. Volumes généreux, verrières industrielles et mobilier soigneusement sélectionné créent une atmosphère unique à la croisée de l'élégance contemporaine et du charme parisien authentique.",
+      shortDescription: "Loft industriel avec vue canal, au coeur du 10e arrondissement.",
+      location: {
+        city: 'Paris',
+        country: 'France',
+        address: 'Canal Saint-Martin, 75010 Paris',
+        area: '10e arrondissement',
+        lat: 48.8698,
+        lng: 2.3635
+      },
+      pricing: {
+        perNight: 320,
+        cleaningFee: 80,
+        currency: 'EUR',
+        minimumStay: 2
+      },
+      capacity: {
+        guests: 4,
+        bedrooms: 2,
+        beds: 2,
+        bathrooms: 1
+      },
+      media: {
+        coverImage: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=1200&q=85',
+        gallery: [
+          'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=1200&q=85',
+          'https://images.unsplash.com/photo-1586023492125-27b2c045efd7?w=1200&q=85',
+          'https://images.unsplash.com/photo-1595526114035-0d45ed16cfbf?w=1200&q=85',
+          'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=1200&q=85'
+        ]
+      },
+      amenities: ['Wifi haut débit', 'Cuisine équipée', 'Machine à café', 'Vue canal', 'Parquet ancien', 'Verrières industrielles', 'Draps et serviettes', 'Chauffage', 'Smart TV'],
+      rules: ['Non-fumeur', 'Animaux non admis', 'Pas de fêtes', 'Départ avant 11h'],
+      checkIn: '15h00',
+      checkOut: '11h00',
+      badges: ['Coup de coeur'],
+      featured: true,
+      upcoming: false,
       available: true,
       paymentLink: '',
-      features: ['5 chambres', 'Piscine à débordement', 'Vue mer', 'Terrasse panoramique', 'Cuisine équipée', 'Parking privé'],
-      maxGuests: 10,
-      bedrooms: 5,
-      bathrooms: 4,
-      area: 350,
+      contactEmail: '',
+      formspreeId: '',
+      seo: {
+        title: 'Appartement Canal Saint-Martin — AURELYS',
+        description: "Location d'un loft industriel avec vue sur le Canal Saint-Martin, Paris 10e."
+      },
+      blockedDates: [],
       order: 0
     },
     {
       id: 'prop_2',
-      name: 'Appartement Haussmann',
-      location: 'Paris 8ème, France',
-      price: 850,
-      currency: '€',
-      period: 'nuit',
-      description: "Un appartement haussmannien d'exception au cœur du Triangle d'Or parisien. Parquet en point de Hongrie, moulures d'époque et décoration contemporaine se mêlent pour créer un cadre unique.",
-      shortDescription: "Appartement haussmannien au cœur de Paris",
-      image: 'https://images.unsplash.com/photo-1560448204-e02f11c3d0e2?w=800&q=80',
+      slug: 'villa-luberon',
+      title: 'Villa du Luberon',
+      subtitle: 'Mas provençal restauré au coeur du Luberon',
+      description: "Un mas provençal du XVIIIe siècle entièrement restauré dans le respect des matières et des volumes d'origine. Pierre, bois, lin : chaque détail a été pensé pour offrir une retraite absolue au coeur du Luberon. Piscine à débordement, jardin de lavande et vue sur le massif.",
+      shortDescription: "Mas du XVIIIe siècle, piscine et vue sur le Luberon.",
+      location: {
+        city: 'Lacoste',
+        country: 'France',
+        address: 'Route des Crêtes, Lacoste, 84480',
+        area: 'Luberon, Provence',
+        lat: 43.8297,
+        lng: 5.4011
+      },
+      pricing: {
+        perNight: 580,
+        cleaningFee: 150,
+        currency: 'EUR',
+        minimumStay: 3
+      },
+      capacity: {
+        guests: 8,
+        bedrooms: 4,
+        beds: 5,
+        bathrooms: 3
+      },
+      media: {
+        coverImage: 'https://images.unsplash.com/photo-1596178065887-1198b6148b2b?w=1200&q=85',
+        gallery: [
+          'https://images.unsplash.com/photo-1596178065887-1198b6148b2b?w=1200&q=85',
+          'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=1200&q=85',
+          'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200&q=85',
+          'https://images.unsplash.com/photo-1613977257363-707ba9348227?w=1200&q=85'
+        ]
+      },
+      amenities: ['Piscine à débordement', 'Jardin de lavande', 'Cuisine provençale', 'Terrasse panoramique', 'Barbecue', 'Wifi', 'Parking', 'Draps et serviettes', 'Climatisation'],
+      rules: ['Non-fumeur (intérieur)', 'Animaux sur demande', 'Séjour minimum 3 nuits'],
+      checkIn: '16h00',
+      checkOut: '10h00',
+      badges: ['Exclusivité', 'Vue panoramique'],
+      featured: true,
+      upcoming: false,
       available: true,
       paymentLink: '',
-      features: ['3 chambres', 'Vue privilégiée', "Parquet d'époque", 'Conciergerie 24h/24', 'Cave à vin', 'Balcon haussmannien'],
-      maxGuests: 6,
-      bedrooms: 3,
-      bathrooms: 2,
-      area: 220,
+      contactEmail: '',
+      formspreeId: '',
+      seo: {
+        title: 'Villa du Luberon — AURELYS',
+        description: "Mas provençal du XVIIIe siècle avec piscine à débordement au coeur du Luberon."
+      },
+      blockedDates: [],
       order: 1
     },
     {
       id: 'prop_3',
-      name: 'Mas Provençal',
-      location: 'Luberon, France',
-      price: 320,
-      currency: '€',
-      period: 'nuit',
-      description: "Un mas provençal authentique au cœur du Luberon. Entre vignes et lavande, cette demeure restaurée avec soin offre un cadre enchanteur pour des vacances au cœur de la Provence.",
-      shortDescription: "Mas authentique au cœur du Luberon",
-      image: 'https://images.unsplash.com/photo-1551882547-ff40c63fe5fa?w=800&q=80',
+      slug: 'penthouse-bordeaux',
+      title: 'Penthouse Bordeaux',
+      subtitle: 'Terrasse de 80m2 sur les toits de Bordeaux',
+      description: "Au sommet d'un immeuble haussmannien du centre de Bordeaux, ce penthouse d'exception offre une terrasse de 80m2 avec vue à 360° sur la ville et la Garonne. Intérieur contemporain, matériaux nobles, équipements haut de gamme.",
+      shortDescription: "Penthouse avec terrasse panoramique sur les toits de Bordeaux.",
+      location: {
+        city: 'Bordeaux',
+        country: 'France',
+        address: 'Centre historique, Bordeaux, 33000',
+        area: 'Centre historique',
+        lat: 44.8378,
+        lng: -0.5792
+      },
+      pricing: {
+        perNight: 450,
+        cleaningFee: 120,
+        currency: 'EUR',
+        minimumStay: 2
+      },
+      capacity: {
+        guests: 6,
+        bedrooms: 3,
+        beds: 3,
+        bathrooms: 2
+      },
+      media: {
+        coverImage: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1200&q=85',
+        gallery: [
+          'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=1200&q=85',
+          'https://images.unsplash.com/photo-1600566752355-35792bedcfea?w=1200&q=85',
+          'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?w=1200&q=85'
+        ]
+      },
+      amenities: ['Terrasse 80m2', 'Vue panoramique', 'Jacuzzi extérieur', 'Cuisine ouverte', 'Cave à vins', 'Wifi fibre', 'Parking privé', 'Climatisation', 'Draps et serviettes'],
+      rules: ['Non-fumeur', 'Pas d\'animaux', 'Séjour minimum 2 nuits'],
+      checkIn: '15h00',
+      checkOut: '11h00',
+      badges: ['Terrasse'],
+      featured: false,
+      upcoming: false,
       available: true,
       paymentLink: '',
-      features: ['4 chambres', 'Piscine chauffée', 'Jardin paysager', 'Vue sur le Luberon', 'Cave à vins', 'Pétanque'],
-      maxGuests: 8,
-      bedrooms: 4,
-      bathrooms: 3,
-      area: 280,
+      contactEmail: '',
+      formspreeId: '',
+      seo: {
+        title: 'Penthouse Bordeaux — AURELYS',
+        description: "Penthouse avec terrasse panoramique de 80m2 sur les toits de Bordeaux."
+      },
+      blockedDates: [],
       order: 2
     }
   ],
+
+  /* ── Logements à venir ──────────────────────────────────── */
   upcomingProperties: [
     {
       id: 'upcoming_1',
-      name: 'Chalet Mont-Blanc',
-      location: 'Chamonix, France',
+      slug: 'chalet-megeve',
+      title: 'Chalet Megève',
+      subtitle: 'Chalet alpin avec accès piste direct',
+      location: { city: 'Megève', country: 'France', lat: 45.8567, lng: 6.6167 },
       expectedDate: '2026-12',
-      description: "Un chalet d'exception au pied du Mont-Blanc. Vue imprenable sur les Alpes, spa privatif et accès direct aux pistes.",
-      image: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800&q=80'
+      description: "Un chalet d'architecte au coeur des Alpes. Vue imprenable sur le Mont-Blanc, spa privatif, accès ski direct.",
+      media: { coverImage: 'https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=800&q=80' }
     },
     {
       id: 'upcoming_2',
-      name: 'Villa Ibiza',
-      location: 'Ibiza, Espagne',
-      expectedDate: '2026-06',
-      description: "Une villa contemporaine avec vue sur la Méditerranée. Architecture minimaliste, piscine infinity et couchers de soleil exceptionnels.",
-      image: 'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?w=800&q=80'
+      slug: 'villa-cap-ferret',
+      title: 'Villa Cap-Ferret',
+      subtitle: 'Villa en bois sur pilotis face au Bassin',
+      location: { city: 'Cap-Ferret', country: 'France', lat: 44.6942, lng: -1.2500 },
+      expectedDate: '2026-07',
+      description: "Une villa en bois sur pilotis face au Bassin d'Arcachon. Terrasse immergée dans la forêt de pins, accès direct à la plage.",
+      media: { coverImage: 'https://images.unsplash.com/photo-1499793983690-e29da59ef1c2?w=800&q=80' }
     }
   ],
-  settings: {
-    siteName: 'Achille & Aurelys',
-    tagline: 'Location de Prestige',
-    heroTitle: "L'Art de Vivre en Luxe",
-    heroSubtitle: "Des résidences d'exception soigneusement sélectionnées pour vos séjours les plus précieux.",
-    aboutTitle: 'Notre Vision du Luxe',
-    aboutText: "Achille & Aurelys est né de la passion pour les espaces d'exception. Nous sélectionnons rigoureusement chaque résidence pour vous offrir une expérience incomparable, alliant luxe, confort et authenticité.\n\nChaque propriété de notre collection a été choisie pour son caractère unique, son emplacement privilégié et la qualité de ses prestations.",
-    contactEmail: 'contact@achille-aurelys.fr',
-    phone: '+33 1 00 00 00 00',
-    address: 'Paris, France',
-    formspreeId: 'YOUR_FORMSPREE_ID',
-    newsletterTitle: 'Soyez informés en avant-première',
-    newsletterText: "Recevez nos nouvelles adresses et offres exclusives directement dans votre boîte mail.",
-    instagramUrl: '#',
-    linkedinUrl: '#',
-    adminPassword: 'admin2024'
-  },
-  legalPages: {
-    cgv: `# Conditions Générales de Vente
+
+  /* ── Réservations ───────────────────────────────────────── */
+  reservations: [],
+
+  /* ── Abonnés newsletter ─────────────────────────────────── */
+  subscribers: [],
+
+  /* ── Contenu éditable ───────────────────────────────────── */
+  content: {
+
+    /* Paramètres globaux */
+    global: {
+      siteName: 'AURELYS',
+      tagline: 'Intemporel par choix.',
+      description: 'Collection de résidences d\'exception. Hébergements courte durée.',
+      contactEmail: 'contact@aurelys.fr',
+      contactPhone: '+33 1 00 00 00 00',
+      address: 'Paris, France',
+      globalFormspreeId: 'YOUR_FORMSPREE_ID',
+      instagramUrl: 'https://instagram.com/aurelys',
+      linkedinUrl: '#',
+      adminPassword: 'aurelys2024',
+      logoText: 'AURELYS',
+      faviconUrl: ''
+    },
+
+    /* Page d'accueil */
+    home: {
+      hero: {
+        label: 'Collection AURELYS',
+        title: 'Intemporel\npar choix.',
+        subtitle: 'Des résidences d\'exception sélectionnées pour ceux qui refusent de choisir entre le confort et l\'élégance.',
+        ctaPrimary: { label: 'Découvrir les résidences', href: '#residences' },
+        ctaSecondary: { label: 'Notre approche', href: '#apropos' }
+      },
+      editorial: {
+        label: 'Notre approche',
+        title: 'Une curation rigoureuse.',
+        body: "Chaque résidence AURELYS est sélectionnée selon des critères d'exigence définis par notre équipe. Qualité architecturale, emplacement, confort des matières, qualité du service : nous ne référençons que ce que nous choisirions pour nous-mêmes.\n\nNous travaillons avec un nombre limité de propriétaires partageant la même vision de l'hospitalité haut de gamme.",
+        image: 'https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=900&q=85',
+        cta: { label: 'Notre sélection', href: '#residences' }
+      },
+      stats: [
+        { value: '12', label: 'Résidences' },
+        { value: '4', label: 'Destinations' },
+        { value: '98%', label: 'Satisfaction' }
+      ],
+      newsletter: {
+        label: 'Newsletter',
+        title: 'Avant-première.',
+        body: 'Recevez en priorité nos nouvelles résidences, nos ouvertures et nos offres exclusives.',
+        placeholder: 'Votre adresse email',
+        ctaLabel: 'S\'inscrire'
+      }
+    },
+
+    /* Footer */
+    footer: {
+      description: 'Collection de résidences d\'exception. Hébergements courte durée sélectionnés pour leur qualité architecturale et leur emplacement.',
+      columns: [
+        {
+          title: 'Résidences',
+          links: [
+            { label: 'Toutes les résidences', href: '#residences' },
+            { label: 'Prochainement', href: '#prochainement' },
+            { label: 'Carte des destinations', href: '#carte' }
+          ]
+        },
+        {
+          title: 'AURELYS',
+          links: [
+            { label: 'Notre approche', href: '#apropos' },
+            { label: 'Proposer une résidence', href: '#contact' },
+            { label: 'Contact', href: '#contact' }
+          ]
+        },
+        {
+          title: 'Informations',
+          links: [
+            { label: 'Conditions générales', href: 'legal.html?page=cgv' },
+            { label: 'Politique de confidentialité', href: 'legal.html?page=privacy' },
+            { label: 'Mentions légales', href: 'legal.html?page=mentions' },
+            { label: 'Politique d\'annulation', href: 'legal.html?page=cancellation' }
+          ]
+        }
+      ],
+      copyright: '© {year} AURELYS. Tous droits réservés.'
+    },
+
+    /* FAQ */
+    faq: [
+      {
+        id: 'faq_1',
+        question: 'Comment fonctionne la réservation ?',
+        answer: 'Sélectionnez votre résidence, choisissez vos dates et le nombre de voyageurs. Une fois votre demande soumise, vous êtes redirigé vers notre page de paiement sécurisé. Votre réservation est confirmée à réception du paiement.'
+      },
+      {
+        id: 'faq_2',
+        question: 'Quels sont les délais de confirmation ?',
+        answer: 'La confirmation est immédiate après réception du paiement. Vous recevrez un email de confirmation avec tous les détails de votre séjour sous 24h.'
+      },
+      {
+        id: 'faq_3',
+        question: 'Quelle est la politique d\'annulation ?',
+        answer: 'Annulation gratuite jusqu\'à 30 jours avant l\'arrivée. Entre 15 et 30 jours : 50% remboursé. Moins de 15 jours : aucun remboursement. Consultez nos conditions générales pour le détail complet.'
+      },
+      {
+        id: 'faq_4',
+        question: 'Les résidences sont-elles accessibles aux personnes à mobilité réduite ?',
+        answer: 'L\'accessibilité varie selon les résidences. Chaque fiche de résidence indique les informations d\'accessibilité. N\'hésitez pas à nous contacter pour tout besoin spécifique.'
+      }
+    ],
+
+    /* Pages légales */
+    legalPages: {
+      cgv: `# Conditions Générales de Vente
 
 Dernière mise à jour : Mars 2026
 
-## Article 1 – Objet
+## Article 1 — Objet et champ d'application
 
-Les présentes conditions générales de vente régissent les relations contractuelles entre Achille & Aurelys et ses clients dans le cadre de la location de résidences de prestige.
+Les présentes Conditions Générales de Vente (ci-après « CGV ») régissent les relations contractuelles entre la société AURELYS (ci-après « AURELYS ») et toute personne physique ou morale souhaitant effectuer une réservation de résidence via le site aurelys.fr (ci-après le « Site »).
 
-## Article 2 – Réservation
+Toute réservation implique l'acceptation pleine et entière des présentes CGV.
 
-Toute réservation est ferme et définitive après paiement de l'acompte de 30 %. Le solde est dû 30 jours avant l'arrivée. La réservation n'est confirmée qu'à réception du règlement et de l'envoi d'une confirmation écrite.
+## Article 2 — Description des services
 
-## Article 3 – Tarifs
+AURELYS propose la location de résidences de prestige à titre de courte durée. Les résidences sont décrites de manière précise sur le Site, notamment leurs caractéristiques, leur capacité d'accueil et leurs tarifs.
 
-Les tarifs indiqués sur le site sont en euros TTC par nuit. Ils peuvent être modifiés à tout moment sans préavis. Le tarif applicable est celui en vigueur au moment de la réservation.
+## Article 3 — Réservation
 
-## Article 4 – Annulation
+**3.1** La réservation est ferme et définitive après réception du paiement intégral ou de l'acompte prévu.
 
-En cas d'annulation par le locataire :
-- Plus de 60 jours avant l'arrivée : remboursement intégral de l'acompte
-- Entre 30 et 60 jours : remboursement de 50 % de l'acompte
-- Moins de 30 jours : aucun remboursement
+**3.2** Toute réservation vaut acceptation des présentes CGV ainsi que des règles spécifiques de la résidence concernée.
 
-## Article 5 – Obligations du locataire
+**3.3** AURELYS se réserve le droit de refuser toute réservation sans avoir à justifier sa décision.
 
-Le locataire s'engage à utiliser le bien loué en bon père de famille, à respecter le règlement intérieur de chaque propriété et à la restituer dans l'état dans lequel il l'a reçue.
+## Article 4 — Tarifs et paiement
 
-## Article 6 – Responsabilité
+**4.1** Les tarifs affichés sont en euros TTC. Ils comprennent la location de la résidence pour la durée sélectionnée. Les frais de ménage sont précisés lors de la réservation.
 
-Achille & Aurelys ne saurait être tenu responsable des dommages causés par des événements extérieurs ou des cas de force majeure (intempéries, catastrophes naturelles, grèves, etc.).
+**4.2** Le paiement s'effectue intégralement en ligne via notre prestataire de paiement sécurisé.
 
-## Article 7 – Litige
+## Article 5 — Politique d'annulation
 
-En cas de litige, les parties s'engagent à rechercher une solution amiable avant tout recours judiciaire. À défaut, le tribunal compétent est celui du siège social d'Achille & Aurelys.`,
+| Délai avant arrivée | Remboursement |
+|---|---|
+| Plus de 30 jours | 100% |
+| 15 à 30 jours | 50% |
+| Moins de 15 jours | 0% |
 
-    privacy: `# Politique de Confidentialité
+En cas d'annulation par AURELYS, le remboursement intégral est effectué dans un délai de 14 jours ouvrés.
+
+## Article 6 — Obligations du locataire
+
+Le locataire s'engage à : utiliser la résidence en bon père de famille, respecter la capacité d'accueil maximale indiquée, respecter le règlement intérieur, restituer les lieux dans l'état dans lequel il les a trouvés.
+
+## Article 7 — Responsabilité
+
+AURELYS ne saurait être tenu responsable des dommages résultant d'un usage non conforme de la résidence, d'événements extérieurs ou de cas de force majeure.
+
+## Article 8 — Droit applicable
+
+Les présentes CGV sont soumises au droit français. Tout litige sera soumis aux tribunaux compétents du ressort de Paris.`,
+
+      privacy: `# Politique de Confidentialité
 
 Dernière mise à jour : Mars 2026
 
 ## 1. Responsable du traitement
 
-Achille & Aurelys, société dont le siège est à Paris, France, est responsable du traitement de vos données personnelles.
+AURELYS, dont le siège social est à Paris, France, est responsable du traitement de vos données personnelles au sens du Règlement Général sur la Protection des Données (RGPD).
+
+Contact : contact@aurelys.fr
 
 ## 2. Données collectées
 
-Nous collectons les données que vous nous fournissez directement :
-- Nom, prénom, adresse email
-- Numéro de téléphone (optionnel)
-- Informations de réservation
-- Données de navigation (cookies techniques uniquement)
+Dans le cadre de nos services, nous collectons les données suivantes :
 
-## 3. Finalités du traitement
+**Données de réservation :** nom, prénom, adresse email, numéro de téléphone, informations de séjour.
 
-Vos données sont utilisées pour :
-- Traiter et confirmer vos réservations
-- Vous envoyer des confirmations et informations de séjour
-- Vous adresser notre newsletter (avec votre consentement explicite)
-- Améliorer nos services
+**Données de navigation :** adresse IP, données de connexion, cookies techniques nécessaires au fonctionnement du site.
 
-## 4. Base légale
+**Données de newsletter :** adresse email (avec votre consentement explicite).
 
-Le traitement est fondé sur l'exécution du contrat (réservation) ou votre consentement (newsletter).
+## 3. Finalités et bases légales
 
-## 5. Vos droits
+| Finalité | Base légale |
+|---|---|
+| Traitement des réservations | Exécution du contrat |
+| Envoi de confirmations | Exécution du contrat |
+| Newsletter | Consentement |
+| Amélioration du service | Intérêt légitime |
 
-Conformément au RGPD, vous disposez d'un droit d'accès, de rectification, d'effacement et de portabilité de vos données. Contactez-nous à : contact@achille-aurelys.fr
+## 4. Vos droits
 
-## 6. Durée de conservation
+Conformément au RGPD, vous disposez des droits suivants : accès, rectification, effacement, limitation, portabilité, opposition.
 
-Vos données sont conservées pendant la durée de notre relation commerciale et 3 ans après la dernière interaction.
+Pour exercer vos droits : contact@aurelys.fr
 
-## 7. Cookies
+## 5. Conservation des données
 
-Nous n'utilisons que les cookies strictement nécessaires au fonctionnement du site. Aucun cookie publicitaire ou de suivi tiers n'est utilisé.`,
+Données de réservation : durée de la relation commerciale + 5 ans (obligations légales).
+Données newsletter : jusqu'à désinscription.
 
-    mentions: `# Mentions Légales
+## 6. Cookies
+
+Nous utilisons uniquement les cookies strictement nécessaires au fonctionnement du site. Aucun cookie publicitaire ou de traçage tiers n'est utilisé.
+
+## 7. Transferts de données
+
+Vos données ne sont pas transférées hors de l'Union Européenne.`,
+
+      mentions: `# Mentions Légales
 
 Dernière mise à jour : Mars 2026
 
 ## Éditeur du site
 
-**Achille & Aurelys**
-Société [forme juridique] au capital de [montant] €
+**AURELYS**
+[Forme juridique] au capital de [montant] €
 RCS Paris : [numéro RCS]
 Siège social : Paris, France
-Email : contact@achille-aurelys.fr
+Email : contact@aurelys.fr
 Téléphone : +33 1 00 00 00 00
 
-## Directeur de la publication
-
-[Nom du directeur de publication]
+**Directeur de la publication :** [Nom du directeur]
 
 ## Hébergement
 
-Ce site internet est hébergé par :
-
 **Netlify, Inc.**
 2325 3rd Street, Suite 215
-San Francisco, California 94107
-États-Unis
-Site : https://www.netlify.com
+San Francisco, California 94107 — États-Unis
+www.netlify.com
 
 ## Propriété intellectuelle
 
-L'ensemble du contenu de ce site (textes, images, graphismes, logo, icônes) est protégé par le droit d'auteur et appartient à Achille & Aurelys ou à ses partenaires. Toute reproduction, représentation ou exploitation, même partielle, est interdite sans autorisation écrite préalable.
+L'ensemble des éléments constituant le site AURELYS (textes, photographies, graphismes, logo, architecture) est la propriété exclusive d'AURELYS et est protégé par les lois françaises et internationales relatives à la propriété intellectuelle.
 
-## Limitation de responsabilité
+Toute reproduction, représentation, modification, publication ou adaptation de tout ou partie des éléments du site, quel que soit le moyen ou le procédé utilisé, est interdite sans autorisation écrite préalable d'AURELYS.
 
-Achille & Aurelys s'efforce d'assurer l'exactitude et la mise à jour des informations diffusées sur ce site, mais ne peut garantir leur exhaustivité ou leur actualité. L'utilisateur est seul responsable de l'utilisation qu'il fait des informations contenues sur ce site.
+## Liens hypertextes
+
+Le site peut contenir des liens vers des sites tiers. AURELYS n'exerce aucun contrôle sur ces sites et décline toute responsabilité quant à leur contenu.
 
 ## Loi applicable
 
-Les présentes mentions légales sont soumises au droit français. Tout litige relatif à leur interprétation et/ou leur exécution relève des tribunaux compétents.`
-  },
-  subscribers: [],
-  reservations: []
+Le présent site et les présentes mentions légales sont soumis au droit français. Tout litige relatif à leur interprétation relève de la compétence exclusive des tribunaux français.`,
+
+      cancellation: `# Politique d'Annulation
+
+Dernière mise à jour : Mars 2026
+
+## Annulation par le locataire
+
+AURELYS applique la politique d'annulation suivante :
+
+| Délai avant la date d'arrivée | Remboursement |
+|---|---|
+| Plus de 30 jours calendaires | Remboursement intégral |
+| Entre 15 et 30 jours | 50% du montant total |
+| Moins de 15 jours | Aucun remboursement |
+
+## Modifications de réservation
+
+Toute demande de modification (dates, nombre de voyageurs) doit être adressée par email à contact@aurelys.fr au moins 30 jours avant l'arrivée. Les modifications sont sous réserve de disponibilité.
+
+## Annulation par AURELYS
+
+En cas d'annulation par AURELYS pour raison de force majeure ou problème technique avec la résidence, le locataire sera remboursé intégralement dans un délai de 14 jours ouvrés.
+
+## Procédure d'annulation
+
+Pour annuler votre réservation, contactez-nous par email à contact@aurelys.fr en indiquant votre numéro de réservation. Une confirmation d'annulation vous sera envoyée sous 24h ouvrées.`
+    }
+  }
 };
 
-/** Lit toutes les données depuis localStorage, initialise avec DEFAULT_DATA si absent */
+/* ================================================================
+   COUCHE D'ABSTRACTION STORAGE
+   (Prête pour migration vers Supabase / Firebase)
+   ================================================================ */
+
+/**
+ * Adapter de stockage — interface unifiée
+ * Remplacer l'implémentation ici pour migrer vers un backend
+ */
+const StorageAdapter = {
+  read() {
+    try {
+      const raw = localStorage.getItem(STORAGE_KEY);
+      return raw ? JSON.parse(raw) : null;
+    } catch {
+      return null;
+    }
+  },
+
+  write(data) {
+    try {
+      data._updatedAt = new Date().toISOString();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+      return true;
+    } catch (e) {
+      console.error('[AURELYS Storage] Write error:', e);
+      return false;
+    }
+  },
+
+  clear() {
+    localStorage.removeItem(STORAGE_KEY);
+  }
+};
+
+/* ================================================================
+   API PUBLIQUE
+   ================================================================ */
+
 function getData() {
-  try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    if (!raw) return JSON.parse(JSON.stringify(DEFAULT_DATA));
-    const data = JSON.parse(raw);
-    // Merge pour garantir la présence des nouvelles clés après mise à jour
-    return deepMerge(JSON.parse(JSON.stringify(DEFAULT_DATA)), data);
-  } catch (e) {
-    console.error('Storage read error:', e);
-    return JSON.parse(JSON.stringify(DEFAULT_DATA));
+  const stored = StorageAdapter.read();
+  if (!stored) return deepClone(DEFAULT_DATA);
+  // Migration si version plus ancienne
+  if (!stored._version || stored._version < STORAGE_VERSION) {
+    return migrateData(stored);
   }
+  return deepMerge(deepClone(DEFAULT_DATA), stored);
 }
 
-/** Sauvegarde les données dans localStorage */
 function saveData(data) {
-  try {
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
-    // Émet un événement custom pour que les autres onglets se synchronisent
-    window.dispatchEvent(new CustomEvent('siteDataUpdated', { detail: data }));
-    return true;
-  } catch (e) {
-    console.error('Storage write error:', e);
-    return false;
+  const ok = StorageAdapter.write(data);
+  if (ok) {
+    // Synchronisation cross-onglets
+    window.dispatchEvent(new CustomEvent('aurelys:dataChanged', { detail: data }));
   }
+  return ok;
 }
 
-/** Réinitialise toutes les données aux valeurs par défaut */
 function resetData() {
-  localStorage.removeItem(STORAGE_KEY);
-  return JSON.parse(JSON.stringify(DEFAULT_DATA));
+  StorageAdapter.clear();
+  return deepClone(DEFAULT_DATA);
 }
 
-/** Exporte les données en JSON */
-function exportData() {
+function exportBackup() {
   const data = getData();
-  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const json = JSON.stringify(data, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url;
-  a.download = 'achille-aurelys-backup.json';
+  a.download = `aurelys-backup-${new Date().toISOString().slice(0, 10)}.json`;
   a.click();
   URL.revokeObjectURL(url);
 }
 
-/** Importe des données depuis un fichier JSON */
-function importData(file, callback) {
+function importBackup(file, callback) {
   const reader = new FileReader();
   reader.onload = (e) => {
     try {
@@ -280,13 +574,92 @@ function importData(file, callback) {
   reader.readAsText(file);
 }
 
-/**
- * Merge profond : les valeurs de `override` écrasent celles de `base`
- * mais les clés présentes dans `base` et absentes de `override` sont conservées
- */
+/* ── Helpers ID ─────────────────────────────────────────────── */
+
+function generateId(prefix = 'id') {
+  const ts = Date.now().toString(36);
+  const rand = Math.random().toString(36).slice(2, 6);
+  return `${prefix}_${ts}${rand}`;
+}
+
+function slugify(str) {
+  return str
+    .toLowerCase()
+    .normalize('NFD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]+/g, '-')
+    .replace(/^-|-$/g, '');
+}
+
+/* ── Helpers données ────────────────────────────────────────── */
+
+function getPropertyBySlug(slug) {
+  const data = getData();
+  return data.properties.find(p => p.slug === slug) || null;
+}
+
+function getPropertyById(id) {
+  const data = getData();
+  return data.properties.find(p => p.id === id) || null;
+}
+
+function getReservationsByProperty(propertyId) {
+  const data = getData();
+  return (data.reservations || []).filter(r => r.propertyId === propertyId);
+}
+
+function getBlockedDates(propertyId) {
+  const prop = getPropertyById(propertyId);
+  if (!prop) return [];
+  const reservationDates = getReservationsByProperty(propertyId)
+    .filter(r => r.status === 'confirmed' || r.status === 'pending_payment')
+    .flatMap(r => expandDateRange(r.dates.checkIn, r.dates.checkOut));
+  return [...new Set([...(prop.blockedDates || []), ...reservationDates])];
+}
+
+function expandDateRange(checkIn, checkOut) {
+  const dates = [];
+  const current = new Date(checkIn);
+  const end = new Date(checkOut);
+  while (current < end) {
+    dates.push(current.toISOString().slice(0, 10));
+    current.setDate(current.getDate() + 1);
+  }
+  return dates;
+}
+
+/* ── Migration ──────────────────────────────────────────────── */
+
+function migrateData(old) {
+  console.info('[AURELYS Storage] Migrating data from v1 to v2');
+  // Fusionner l'ancien format avec les valeurs par défaut
+  const fresh = deepClone(DEFAULT_DATA);
+  // Conserver les propriétés existantes si elles existent
+  if (Array.isArray(old.properties) && old.properties.length) {
+    fresh.properties = old.properties;
+  }
+  if (Array.isArray(old.subscribers)) {
+    fresh.subscribers = old.subscribers;
+  }
+  if (Array.isArray(old.reservations)) {
+    fresh.reservations = old.reservations;
+  }
+  if (old.settings) {
+    Object.assign(fresh.content.global, old.settings);
+  }
+  fresh._version = STORAGE_VERSION;
+  saveData(fresh);
+  return fresh;
+}
+
+/* ── Utilitaires ────────────────────────────────────────────── */
+
+function deepClone(obj) {
+  return JSON.parse(JSON.stringify(obj));
+}
+
 function deepMerge(base, override) {
-  if (typeof override !== 'object' || override === null) return override;
-  if (Array.isArray(override)) return override;
+  if (typeof override !== 'object' || override === null || Array.isArray(override)) return override;
   const result = { ...base };
   for (const key of Object.keys(override)) {
     if (key in base && typeof base[key] === 'object' && !Array.isArray(base[key]) && base[key] !== null) {
@@ -298,9 +671,25 @@ function deepMerge(base, override) {
   return result;
 }
 
-/** Génère un ID unique */
-function generateId(prefix = 'item') {
-  return `${prefix}_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
-}
+/* ================================================================
+   EXPORT GLOBAL
+   ================================================================ */
 
-window.Storage = { getData, saveData, resetData, exportData, importData, generateId };
+window.AureStorage = {
+  getData,
+  saveData,
+  resetData,
+  exportBackup,
+  importBackup,
+  generateId,
+  slugify,
+  getPropertyBySlug,
+  getPropertyById,
+  getReservationsByProperty,
+  getBlockedDates,
+  expandDateRange,
+  deepClone
+};
+
+// Compatibilité ascendante avec l'ancien nom
+window.Storage = window.AureStorage;

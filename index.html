@@ -62,52 +62,138 @@
   <div id="hero-spotlight" aria-hidden="true"></div>
 
   <div class="container hero-container">
-    <div class="hero-content">
-      <div class="hero-eyebrow">
-        <span class="hero-eyebrow-line" aria-hidden="true"></span>
-        <span class="hero-eyebrow-text" data-text="heroLabel">Collection AURELYS</span>
+    <div class="hero-split">
+
+      <!-- Colonne gauche : texte -->
+      <div class="hero-content">
+        <div class="hero-eyebrow">
+          <span class="hero-eyebrow-line" aria-hidden="true"></span>
+          <span class="hero-eyebrow-text" data-text="heroLabel">Collection AURELYS</span>
+        </div>
+
+        <h1 class="hero-title" id="hero-title">
+          Intemporel<br><em>par choix.</em>
+        </h1>
+
+        <p class="hero-subtitle" id="hero-subtitle">
+          Des résidences d'exception sélectionnées pour ceux qui refusent de choisir entre le confort et l'élégance.
+        </p>
+
+        <div class="hero-actions">
+          <a href="#logements" class="btn btn-primary">
+            Découvrir les résidences
+            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+              <path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+            </svg>
+          </a>
+          <a href="#a-propos" class="btn btn-outline">Notre approche</a>
+        </div>
+
+        <div class="hero-stats" aria-label="Chiffres clés">
+          <div class="hero-stat">
+            <p class="hero-stat-number">3+</p>
+            <p class="hero-stat-label">Résidences</p>
+          </div>
+          <div class="hero-stat-divider" aria-hidden="true"></div>
+          <div class="hero-stat">
+            <p class="hero-stat-number">5★</p>
+            <p class="hero-stat-label">Expérience</p>
+          </div>
+          <div class="hero-stat-divider" aria-hidden="true"></div>
+          <div class="hero-stat">
+            <p class="hero-stat-number">98%</p>
+            <p class="hero-stat-label">Satisfaction</p>
+          </div>
+        </div>
       </div>
 
-      <h1 class="hero-title" id="hero-title">
-        Intemporel<br><em>par choix.</em>
-      </h1>
+      <!-- Colonne droite : visuel éditorial -->
+      <div class="hero-visual" aria-hidden="true">
+        <!-- Image principale -->
+        <div class="hero-img-frame">
+          <img
+            class="hero-img"
+            src="https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=900&q=85"
+            alt="Résidence AURELYS"
+            loading="eager"
+          >
+          <!-- Badge disponibilité -->
+          <div class="hero-img-badge">
+            <span class="hero-img-badge-dot"></span>
+            Disponible maintenant
+          </div>
+        </div>
 
-      <p class="hero-subtitle" id="hero-subtitle">
-        Des résidences d'exception sélectionnées pour ceux qui refusent de choisir entre le confort et l'élégance.
-      </p>
+        <!-- Image secondaire (overlapping) -->
+        <div class="hero-img-secondary">
+          <img
+            src="https://images.unsplash.com/photo-1600210492486-724fe5c67fb3?w=600&q=80"
+            alt=""
+            loading="lazy"
+          >
+        </div>
 
-      <div class="hero-actions">
-        <a href="#logements" class="btn btn-primary">
-          Découvrir les résidences
-          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-            <path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-          </svg>
-        </a>
-        <a href="#a-propos" class="btn btn-outline">Notre approche</a>
+        <!-- Floating card infos -->
+        <div class="hero-floating-card">
+          <p class="hero-floating-label">Paris · Canal Saint-Martin</p>
+          <p class="hero-floating-title">Appartement loft</p>
+          <p class="hero-floating-price">320 <span>€ / nuit</span></p>
+        </div>
+
+        <!-- Floating rating -->
+        <div class="hero-floating-rating">
+          <div class="hero-floating-stars">★★★★★</div>
+          <p class="hero-floating-review">« Un lieu hors du temps… »</p>
+        </div>
       </div>
 
-      <div class="hero-stats" aria-label="Chiffres clés">
-        <div class="hero-stat">
-          <p class="hero-stat-number" id="stat-residences">3+</p>
-          <p class="hero-stat-label">Résidences</p>
-        </div>
-        <div class="hero-stat-divider" aria-hidden="true"></div>
-        <div class="hero-stat">
-          <p class="hero-stat-number">5★</p>
-          <p class="hero-stat-label">Expérience</p>
-        </div>
-        <div class="hero-stat-divider" aria-hidden="true"></div>
-        <div class="hero-stat">
-          <p class="hero-stat-number" id="stat-satisfaction">98%</p>
-          <p class="hero-stat-label">Satisfaction</p>
-        </div>
-      </div>
     </div>
   </div>
 
   <div class="hero-scroll" aria-hidden="true">
     <span class="hero-scroll-line"></span>
     <span class="hero-scroll-text">Scroll</span>
+  </div>
+</section>
+
+<!-- ── Nos valeurs ──────────────────────────────────────────── -->
+<section class="section-sm values-section" aria-label="Nos valeurs">
+  <div class="container">
+    <div class="values-grid">
+
+      <div class="value-item fade-in">
+        <div class="value-icon-wrap" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M12 2l3.09 6.26L22 9.27l-5 4.87 1.18 6.88L12 17.77l-6.18 3.25L7 14.14 2 9.27l6.91-1.01L12 2z"/>
+          </svg>
+        </div>
+        <h3 class="value-title">Sélection</h3>
+        <p class="value-body">Chaque résidence est rigoureusement évaluée. Qualité architecturale, emplacement, matières, service — nous n'acceptons que l'exception.</p>
+      </div>
+
+      <div class="value-item fade-in fade-in-delay-1">
+        <div class="value-icon-wrap" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/>
+            <circle cx="12" cy="7" r="4"/>
+          </svg>
+        </div>
+        <h3 class="value-title">Service</h3>
+        <p class="value-body">Un accompagnement personnalisé de la première question jusqu'à votre départ. Disponibles, attentifs, discrets.</p>
+      </div>
+
+      <div class="value-item fade-in fade-in-delay-2">
+        <div class="value-icon-wrap" aria-hidden="true">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5">
+            <path d="M3 9l9-7 9 7v11a2 2 0 01-2 2H5a2 2 0 01-2-2z"/>
+            <polyline points="9,22 9,12 15,12 15,22"/>
+          </svg>
+        </div>
+        <h3 class="value-title">Authenticité</h3>
+        <p class="value-body">Des espaces qui ont une âme. Nous refusons l'uniformité et privilégions les lieux chargés de caractère et d'histoire.</p>
+      </div>
+
+    </div>
   </div>
 </section>
 
@@ -131,15 +217,56 @@
   </div>
 </section>
 
-<!-- ── Carte interactive ────────────────────────────────────── -->
+<!-- ── Citation de marque ───────────────────────────────────── -->
+<section class="quote-band" aria-label="Manifeste AURELYS">
+  <div class="container">
+    <div class="quote-inner">
+      <div class="quote-deco" aria-hidden="true">
+        <svg width="48" height="36" viewBox="0 0 48 36" fill="none">
+          <path d="M0 36V22.8C0 15.6 2.4 9.6 7.2 4.8 12 1.6 17.6 0 24 0v6c-4 0-7.2 1.2-9.6 3.6C12 12 10.8 15.2 10.8 19.2H18V36H0zm30 0V22.8C30 15.6 32.4 9.6 37.2 4.8 42 1.6 47.6 0 54 0" fill="currentColor" opacity="0.15"/>
+        </svg>
+      </div>
+      <blockquote class="brand-quote">
+        <p class="brand-quote-text">Nous ne louons pas des appartements.<br>Nous ouvrons les portes d'une certaine idée du luxe.</p>
+        <footer class="brand-quote-footer">
+          <cite class="brand-quote-cite">AURELYS</cite>
+          <span class="brand-quote-rule" aria-hidden="true"></span>
+          <span class="brand-quote-tagline">Intemporel par choix.</span>
+        </footer>
+      </blockquote>
+    </div>
+  </div>
+</section>
+
+<!-- ── Carte mondiale ───────────────────────────────────────── -->
 <section class="section map-section" id="carte" aria-labelledby="map-heading">
   <div class="container">
-    <div style="margin-bottom:48px;">
-      <span class="section-label">Localisation</span>
-      <h2 class="section-title" id="map-heading">Nos destinations</h2>
-      <p class="section-subtitle">Situez nos résidences et explorez les quartiers qui les entourent.</p>
+
+    <!-- Header de section -->
+    <div class="map-section-header">
+      <div>
+        <span class="section-label">Destinations</span>
+        <h2 class="section-title" id="map-heading">Nos adresses dans le monde</h2>
+        <p class="section-subtitle">Explorez nos résidences sur la carte et situez chaque adresse.</p>
+      </div>
+      <div class="map-dest-stats" id="map-dest-stats" aria-live="polite">
+        <!-- Alimenté par app.js -->
+      </div>
     </div>
-    <div id="map-container" role="application" aria-label="Carte des résidences AURELYS"></div>
+
+    <!-- Disposition carte + panel -->
+    <div class="map-layout">
+      <div id="map-container" role="application" aria-label="Carte mondiale des résidences AURELYS"></div>
+      <div class="map-side-panel" id="map-side-panel">
+        <div class="map-panel-header">
+          <p class="map-panel-title">Résidences disponibles</p>
+        </div>
+        <div class="map-panel-list" id="map-panel-list" aria-live="polite">
+          <!-- Alimenté par app.js -->
+        </div>
+      </div>
+    </div>
+
   </div>
 </section>
 

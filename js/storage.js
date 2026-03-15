@@ -181,6 +181,59 @@ const DEFAULT_DATA = {
       },
       blockedDates: [],
       order: 2
+    },
+    {
+      id: 'prop_4',
+      slug: 'villa-rio-de-janeiro',
+      title: 'Villa Rio de Janeiro',
+      subtitle: 'Vue sur la baie de Guanabara et le Pain de Sucre',
+      description: "Au cœur de l'une des plus belles villes du monde, cette villa d'exception offre une vue imprenable sur la baie de Guanabara et le Pain de Sucre. Architecture contemporaine brésilienne, finitions luxueuses, piscine privée avec vue sur l'Atlantique et accès à l'ambiance unique de Santa Teresa.",
+      shortDescription: "Villa contemporaine avec vue panoramique sur la baie de Guanabara, Rio de Janeiro.",
+      location: {
+        city: 'Rio de Janeiro',
+        country: 'Brésil',
+        address: 'Santa Teresa, Rio de Janeiro, RJ',
+        area: 'Santa Teresa',
+        lat: -22.9132,
+        lng: -43.1794
+      },
+      pricing: {
+        perNight: 680,
+        cleaningFee: 200,
+        currency: 'EUR',
+        minimumStay: 3
+      },
+      capacity: {
+        guests: 6,
+        bedrooms: 3,
+        beds: 4,
+        bathrooms: 2
+      },
+      media: {
+        coverImage: 'https://images.unsplash.com/photo-1518639192441-8fce0a366e2e?w=1200&q=85',
+        gallery: [
+          'https://images.unsplash.com/photo-1518639192441-8fce0a366e2e?w=1200&q=85',
+          'https://images.unsplash.com/photo-1558618666-fcd25c85cd64?w=1200&q=85',
+          'https://images.unsplash.com/photo-1544989164-31d5f7d67b6a?w=1200&q=85'
+        ]
+      },
+      amenities: ['Piscine privée', 'Vue baie de Guanabara', 'Cuisine équipée', 'Terrasse panoramique', 'Climatisation', 'Wifi haut débit', 'Service de conciergerie', 'Parking privé', 'Draps et serviettes'],
+      rules: ['Non-fumeur', 'Animaux sur demande', 'Séjour minimum 3 nuits', 'Départ avant 11h'],
+      checkIn: '15h00',
+      checkOut: '11h00',
+      badges: ['Exclusivité', 'Vue panoramique'],
+      featured: true,
+      upcoming: false,
+      available: true,
+      paymentLink: '',
+      contactEmail: '',
+      formspreeId: '',
+      seo: {
+        title: 'Villa Rio de Janeiro — AURELYS',
+        description: "Villa contemporaine avec vue sur la baie de Guanabara à Rio de Janeiro, Brésil."
+      },
+      blockedDates: [],
+      order: 3
     }
   ],
 
@@ -531,7 +584,17 @@ function getData() {
   if (!stored._version || stored._version < STORAGE_VERSION) {
     return migrateData(stored);
   }
-  return deepMerge(deepClone(DEFAULT_DATA), stored);
+  const data = deepMerge(deepClone(DEFAULT_DATA), stored);
+  // Injection de prop_4 (Rio) si absent des données existantes
+  if (!data.properties.find(p => p.id === 'prop_4')) {
+    const rio = deepClone(DEFAULT_DATA.properties.find(p => p.id === 'prop_4'));
+    if (rio) {
+      rio.order = data.properties.length;
+      data.properties.push(rio);
+      saveData(data);
+    }
+  }
+  return data;
 }
 
 function saveData(data) {

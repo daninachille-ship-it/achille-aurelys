@@ -11,7 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
   renderUpcoming(data.upcomingProperties);
   renderStats(data.content.home && data.content.home.stats);
   renderFaq(data.content && data.content.faq);
-  initMap(data.properties);
+  AureMap.init(data.properties);
 
   initNav();
   initNewsletter();
@@ -27,7 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
     renderUpcoming(fresh.upcomingProperties);
     renderStats(fresh.content.home && fresh.content.home.stats);
     renderFaq(fresh.content && fresh.content.faq);
-    updateMapMarkers(fresh.properties);
+    AureMap.update(fresh.properties);
   });
 
   window.addEventListener('storage', (e) => {
@@ -356,193 +356,6 @@ function renderFaq(items) {
   initFadeIn();
 }
 
-
-/* ── Carte Leaflet mondiale ──────────────────────────────────── */
-
-let _map = null;
-let _markersLayer = null;
-let _activeMarker = null;
-
-function initMap(properties) {
-  const container = document.getElementById('map-container');
-  if (!container || typeof L === 'undefined') return;
-
-  const available = (properties || []).filter(p => p.available !== false && p.location && p.location.lat);
-
-  if (available.length === 0) {
-    const section = document.getElementById('carte');
-    if (section) section.style.display = 'none';
-    return;
-  }
-
-  /* Stats de destinations */
-  _renderMapStats(available);
-
-  /* Panel latéral */
-  _renderMapPanel(available);
-
-  /* Barycentre */
-  const centerLat = available.reduce((s, p) => s + p.location.lat, 0) / available.length;
-  const centerLng = available.reduce((s, p) => s + p.location.lng, 0) / available.length;
-  const zoom = available.length === 1 ? 11 : 5;
-
-  _map = L.map('map-container', {
-    center: [centerLat, centerLng],
-    zoom,
-    zoomControl: true,
-    scrollWheelZoom: false,
-    attributionControl: true,
-  });
-
-  /* Tuiles CartoDB Dark Matter + étiquettes */
-  L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-    attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank">OpenStreetMap</a> &copy; <a href="https://carto.com/attributions" target="_blank">CARTO</a>',
-    subdomains: 'abcd',
-    maxZoom: 19,
-  }).addTo(_map);
-
-  _markersLayer = L.layerGroup().addTo(_map);
-  _addMarkers(available);
-}
-
-function _renderMapStats(properties) {
-  const statsEl = document.getElementById('map-dest-stats');
-  if (!statsEl) return;
-
-  const cities   = new Set(properties.map(p => p.location && p.location.city).filter(Boolean));
-  const countries = new Set(properties.map(p => p.location && p.location.country).filter(Boolean));
-
-  statsEl.innerHTML = `
-    <div class="map-dest-stat">
-      <span class="map-dest-stat-value">${properties.length}</span>
-      <span class="map-dest-stat-label">Résidence${properties.length > 1 ? 's' : ''}</span>
-    </div>
-    <div class="map-dest-stat">
-      <span class="map-dest-stat-value">${cities.size || properties.length}</span>
-      <span class="map-dest-stat-label">Ville${cities.size > 1 ? 's' : ''}</span>
-    </div>
-    <div class="map-dest-stat">
-      <span class="map-dest-stat-value">${countries.size || 1}</span>
-      <span class="map-dest-stat-label">Pays</span>
-    </div>`;
-}
-
-function _renderMapPanel(properties) {
-  const panel = document.getElementById('map-panel-list');
-  if (!panel) return;
-
-  panel.innerHTML = properties.map(p => {
-    const cover  = escHtml((p.media && p.media.coverImage) || '');
-    const city   = escHtml(p.location ? (p.location.city || p.location.area || '') : '');
-    const price  = (p.pricing && p.pricing.perNight) || 0;
-    const currency = (p.pricing && p.pricing.currency) || 'EUR';
-    const priceStr = new Intl.NumberFormat('fr-FR', {
-      style: 'currency', currency, minimumFractionDigits: 0
-    }).format(price);
-
-    return `
-      <button class="map-property-item" data-map-prop="${escHtml(p.id)}" type="button">
-        ${cover ? `<img class="map-property-item-img" src="${cover}" alt="${escHtml(p.title)}" loading="lazy">` : ''}
-        <div class="map-property-item-info">
-          <span class="map-property-item-city">${city}</span>
-          <span class="map-property-item-name">${escHtml(p.title)}</span>
-          <span class="map-property-item-price">${priceStr} / nuit</span>
-        </div>
-      </button>`;
-  }).join('');
-
-  /* Clic sur un item → centrer la carte sur ce logement */
-  panel.querySelectorAll('[data-map-prop]').forEach(btn => {
-    btn.addEventListener('click', () => {
-      const id = btn.dataset.mapProp;
-      const prop = properties.find(p => p.id === id);
-      if (!prop || !_map) return;
-
-      _map.flyTo([prop.location.lat, prop.location.lng], 12, { duration: 1.2 });
-      _setActivePanel(id);
-
-      /* Ouvrir le popup du marqueur */
-      if (_markersLayer) {
-        _markersLayer.eachLayer(layer => {
-          if (layer.options && layer.options.propertyId === id) {
-            layer.openPopup();
-          }
-        });
-      }
-    });
-  });
-}
-
-function _setActivePanel(propertyId) {
-  const panel = document.getElementById('map-panel-list');
-  if (!panel) return;
-  panel.querySelectorAll('.map-property-item').forEach(btn => {
-    btn.classList.toggle('active', btn.dataset.mapProp === propertyId);
-  });
-}
-
-function _addMarkers(properties) {
-  if (!_markersLayer) return;
-  _markersLayer.clearLayers();
-
-  properties.forEach(p => {
-    if (!p.location || !p.location.lat) return;
-
-    /* Marqueur SVG pulsant */
-    const iconHtml = `
-      <div class="map-marker-outer">
-        <div class="map-marker-pulse"></div>
-        <div class="map-marker-dot"></div>
-      </div>`;
-
-    const icon = L.divIcon({
-      html: iconHtml,
-      className: '',
-      iconSize: [40, 40],
-      iconAnchor: [20, 20],
-      popupAnchor: [0, -24],
-    });
-
-    const price = (p.pricing && p.pricing.perNight) || 0;
-    const currency = (p.pricing && p.pricing.currency) || 'EUR';
-    const priceStr = new Intl.NumberFormat('fr-FR', {
-      style: 'currency', currency, minimumFractionDigits: 0
-    }).format(price);
-    const city   = escHtml((p.location && (p.location.city || p.location.area)) || '');
-    const cover  = escHtml((p.media && p.media.coverImage) || '');
-
-    const popupHtml = `
-      <div class="map-popup">
-        ${cover ? `<img class="map-popup-img" src="${cover}" alt="${escHtml(p.title)}" loading="lazy">` : ''}
-        <div class="map-popup-body">
-          <p class="map-popup-location">${city}</p>
-          <h3 class="map-popup-title">${escHtml(p.title)}</h3>
-          <p class="map-popup-price"><strong>${priceStr}</strong> / nuit</p>
-          <button class="map-popup-btn" onclick="AureBooking.initBookingModal('${escHtml(p.id)}')">Réserver</button>
-        </div>
-      </div>`;
-
-    const marker = L.marker([p.location.lat, p.location.lng], {
-      icon,
-      propertyId: p.id,
-    })
-      .addTo(_markersLayer)
-      .bindPopup(popupHtml, { maxWidth: 240, minWidth: 200, className: '' });
-
-    marker.on('click', () => {
-      _setActivePanel(p.id);
-      AureState.ui.activePropertyId = p.id;
-      AureState.emit('map:propertySelected', p);
-    });
-  });
-}
-
-function updateMapMarkers(properties) {
-  const available = (properties || []).filter(p => p.available !== false && p.location && p.location.lat);
-  _renderMapStats(available);
-  _renderMapPanel(available);
-  _addMarkers(available);
-}
 
 
 /* ── Navigation ─────────────────────────────────────────────── */

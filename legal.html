@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Informations légales — Achille &amp; Aurelys</title>
+  <meta name="robots" content="noindex">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;500&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <style>
+    /* Variables identiques au site */
+    :root {
+      --bg:         #0a0a0a;
+      --bg-alt:     #111111;
+      --bg-card:    #161616;
+      --border:     rgba(255,255,255,0.08);
+      --gold:       #c9a96e;
+      --text:       #f0ede8;
+      --text-muted: #8a8680;
+      --text-dim:   #5a5752;
+      --radius:     12px;
+      --font-serif: 'Playfair Display', Georgia, serif;
+      --font-sans:  'Inter', system-ui, -apple-system, sans-serif;
+    }
+
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+    html { scroll-behavior: smooth; }
+
+    body {
+      background: var(--bg);
+      color: var(--text);
+      font-family: var(--font-sans);
+      font-size: 16px;
+      line-height: 1.6;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    a { color: var(--gold); text-decoration: none; }
+    a:hover { text-decoration: underline; }
+
+    /* Navigation */
+    .nav {
+      background: rgba(10,10,10,0.95);
+      backdrop-filter: blur(12px);
+      border-bottom: 1px solid var(--border);
+      padding: 18px 0;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .nav-inner {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 0 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+    }
+    .nav-logo {
+      font-family: var(--font-serif);
+      font-size: 1.2rem;
+      color: var(--text);
+    }
+    .nav-logo span { color: var(--gold); }
+    .nav-back {
+      font-size: 13px;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+    .nav-back:hover { color: var(--gold); text-decoration: none; }
+
+    /* Tabs */
+    .tabs-wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 32px 24px 0;
+    }
+    .tabs {
+      display: flex;
+      gap: 4px;
+      background: rgba(255,255,255,0.03);
+      padding: 4px;
+      border-radius: var(--radius);
+      border: 1px solid var(--border);
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 10px 16px;
+      border-radius: 8px;
+      background: none;
+      border: none;
+      color: var(--text-muted);
+      font-family: var(--font-sans);
+      font-size: 13px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.25s ease;
+      text-align: center;
+    }
+    .tab-btn.active {
+      background: rgba(201,169,110,0.12);
+      color: var(--gold);
+    }
+
+    /* Contenu */
+    .content-wrap {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 40px 24px 80px;
+    }
+
+    .legal-content {
+      display: none;
+    }
+    .legal-content.active {
+      display: block;
+    }
+
+    /* Rendu Markdown minimaliste */
+    .legal-body h1 {
+      font-family: var(--font-serif);
+      font-size: 2.2rem;
+      font-weight: 400;
+      margin-bottom: 8px;
+      color: var(--text);
+    }
+    .legal-body h2 {
+      font-family: var(--font-serif);
+      font-size: 1.3rem;
+      font-weight: 400;
+      color: var(--gold);
+      margin-top: 36px;
+      margin-bottom: 12px;
+      padding-bottom: 8px;
+      border-bottom: 1px solid var(--border);
+    }
+    .legal-body h3 {
+      font-size: 1rem;
+      font-weight: 600;
+      color: var(--text);
+      margin-top: 20px;
+      margin-bottom: 8px;
+    }
+    .legal-body p {
+      color: var(--text-muted);
+      margin-bottom: 14px;
+      line-height: 1.8;
+    }
+    .legal-body ul, .legal-body ol {
+      color: var(--text-muted);
+      margin: 12px 0 16px 24px;
+      line-height: 1.8;
+    }
+    .legal-body li { margin-bottom: 6px; }
+    .legal-body strong {
+      color: var(--text);
+      font-weight: 600;
+    }
+    .legal-body code {
+      background: rgba(255,255,255,0.06);
+      padding: 2px 6px;
+      border-radius: 4px;
+      font-size: 0.9em;
+    }
+    .legal-body hr {
+      border: none;
+      border-top: 1px solid var(--border);
+      margin: 32px 0;
+    }
+
+    /* Date de mise à jour */
+    .legal-meta {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 32px;
+      padding-bottom: 24px;
+      border-bottom: 1px solid var(--border);
+    }
+    .legal-meta-line {
+      width: 32px;
+      height: 1px;
+      background: var(--gold);
+    }
+    .legal-meta-text {
+      font-size: 12px;
+      letter-spacing: 0.12em;
+      text-transform: uppercase;
+      color: var(--text-dim);
+    }
+
+    /* Footer minimal */
+    .footer-mini {
+      border-top: 1px solid var(--border);
+      padding: 24px;
+      text-align: center;
+      font-size: 13px;
+      color: var(--text-dim);
+    }
+    .footer-mini a { color: var(--text-muted); margin: 0 12px; }
+    .footer-mini a:hover { color: var(--gold); }
+
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: var(--bg); }
+    ::-webkit-scrollbar-thumb { background: rgba(201,169,110,0.3); border-radius: 3px; }
+  </style>
+</head>
+<body>
+
+<!-- Navigation -->
+<header class="nav">
+  <div class="nav-inner">
+    <a href="index.html" class="nav-logo">Achille &amp; <span>Aurelys</span></a>
+    <a href="index.html" class="nav-back">
+      ← Retour au site
+    </a>
+  </div>
+</header>
+
+<!-- Onglets de navigation -->
+<div class="tabs-wrap">
+  <div class="tabs" role="tablist" aria-label="Pages légales">
+    <button
+      class="tab-btn active"
+      id="tab-cgv"
+      role="tab"
+      aria-selected="true"
+      aria-controls="content-cgv"
+      data-page="cgv"
+    >
+      Conditions générales
+    </button>
+    <button
+      class="tab-btn"
+      id="tab-privacy"
+      role="tab"
+      aria-selected="false"
+      aria-controls="content-privacy"
+      data-page="privacy"
+    >
+      Confidentialité
+    </button>
+    <button
+      class="tab-btn"
+      id="tab-mentions"
+      role="tab"
+      aria-selected="false"
+      aria-controls="content-mentions"
+      data-page="mentions"
+    >
+      Mentions légales
+    </button>
+  </div>
+</div>
+
+<!-- Contenu des pages légales -->
+<main class="content-wrap">
+
+  <div id="content-cgv" class="legal-content active" role="tabpanel" aria-labelledby="tab-cgv">
+    <div class="legal-meta">
+      <span class="legal-meta-line" aria-hidden="true"></span>
+      <span class="legal-meta-text">Conditions générales de vente</span>
+    </div>
+    <div class="legal-body" id="body-cgv">
+      <!-- Chargé dynamiquement depuis localStorage -->
+    </div>
+  </div>
+
+  <div id="content-privacy" class="legal-content" role="tabpanel" aria-labelledby="tab-privacy" hidden>
+    <div class="legal-meta">
+      <span class="legal-meta-line" aria-hidden="true"></span>
+      <span class="legal-meta-text">Politique de confidentialité</span>
+    </div>
+    <div class="legal-body" id="body-privacy">
+      <!-- Chargé dynamiquement depuis localStorage -->
+    </div>
+  </div>
+
+  <div id="content-mentions" class="legal-content" role="tabpanel" aria-labelledby="tab-mentions" hidden>
+    <div class="legal-meta">
+      <span class="legal-meta-line" aria-hidden="true"></span>
+      <span class="legal-meta-text">Mentions légales</span>
+    </div>
+    <div class="legal-body" id="body-mentions">
+      <!-- Chargé dynamiquement depuis localStorage -->
+    </div>
+  </div>
+
+</main>
+
+<!-- Footer minimal -->
+<footer class="footer-mini">
+  <p>
+    &copy; <span id="footer-year"></span> Achille &amp; Aurelys —
+    <a href="index.html">Accueil</a>
+    <a href="index.html#contact">Contact</a>
+    <a href="admin.html">Administration</a>
+  </p>
+</footer>
+
+<script src="js/storage.js"></script>
+<script>
+  // ── Rendu Markdown minimal (pas de dépendance externe) ───── //
+  function renderMarkdown(text) {
+    if (!text) return '<p>Contenu non disponible.</p>';
+    return text
+      // Titres
+      .replace(/^### (.+)$/gm, '<h3>$1</h3>')
+      .replace(/^## (.+)$/gm, '<h2>$1</h2>')
+      .replace(/^# (.+)$/gm, '<h1>$1</h1>')
+      // Gras
+      .replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>')
+      // Italique
+      .replace(/\*(.+?)\*/g, '<em>$1</em>')
+      // Listes à puces
+      .replace(/^- (.+)$/gm, '<li>$1</li>')
+      .replace(/(<li>.*<\/li>\n?)+/g, '<ul>$&</ul>')
+      // Listes numérotées
+      .replace(/^\d+\. (.+)$/gm, '<li>$1</li>')
+      // Séparateur
+      .replace(/^---$/gm, '<hr>')
+      // Paragraphes (lignes vides entre blocs)
+      .replace(/\n\n/g, '</p><p>')
+      // Sauts de ligne simples
+      .replace(/\n/g, '<br>')
+      // Envelopper dans <p> si pas déjà un bloc
+      .replace(/^(?!<[h|u|o|l|p|h])/gm, '<p>')
+      .replace(/(?<![>])$/gm, '</p>')
+      // Nettoyage des <p> vides
+      .replace(/<p><\/p>/g, '')
+      .replace(/<p>\s*<br>\s*<\/p>/g, '')
+      // Corriger les <p> autour des blocs
+      .replace(/<p>(<[h|u|o|h][^>]*>)/g, '$1')
+      .replace(/(<\/[h|u|o|h][^>]*>)<\/p>/g, '$1');
+  }
+
+  // ── Chargement des pages légales ──────────────────────────── //
+  function loadLegalPages() {
+    const data = Storage.getData();
+    const pages = data.legalPages || {};
+
+    document.getElementById('body-cgv').innerHTML = renderMarkdown(pages.cgv);
+    document.getElementById('body-privacy').innerHTML = renderMarkdown(pages.privacy);
+    document.getElementById('body-mentions').innerHTML = renderMarkdown(pages.mentions);
+  }
+
+  // ── Navigation entre onglets ─────────────────────────────── //
+  function switchTab(page) {
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      const active = btn.dataset.page === page;
+      btn.classList.toggle('active', active);
+      btn.setAttribute('aria-selected', active);
+    });
+
+    document.querySelectorAll('.legal-content').forEach(el => {
+      const active = el.id === `content-${page}`;
+      el.classList.toggle('active', active);
+      if (active) {
+        el.removeAttribute('hidden');
+      } else {
+        el.setAttribute('hidden', '');
+      }
+    });
+
+    // Mettre à jour l'URL sans recharger
+    const url = new URL(window.location.href);
+    url.searchParams.set('page', page);
+    window.history.replaceState({}, '', url.toString());
+
+    // Mettre à jour le titre
+    const titles = {
+      cgv: 'Conditions Générales de Vente',
+      privacy: 'Politique de Confidentialité',
+      mentions: 'Mentions Légales'
+    };
+    document.title = `${titles[page] || 'Informations légales'} — Achille & Aurelys`;
+  }
+
+  // ── Initialisation ────────────────────────────────────────── //
+  document.addEventListener('DOMContentLoaded', () => {
+    loadLegalPages();
+
+    // Lire la page depuis l'URL (?page=cgv|privacy|mentions)
+    const params = new URLSearchParams(window.location.search);
+    const page = params.get('page');
+    if (page && ['cgv', 'privacy', 'mentions'].includes(page)) {
+      switchTab(page);
+    }
+
+    // Attacher les clics sur les onglets
+    document.querySelectorAll('.tab-btn').forEach(btn => {
+      btn.addEventListener('click', () => switchTab(btn.dataset.page));
+    });
+
+    // Année dans le footer
+    document.getElementById('footer-year').textContent = new Date().getFullYear();
+  });
+
+  // Synchronisation si les données sont mises à jour dans un autre onglet
+  window.addEventListener('storage', (e) => {
+    if (e.key === 'achille_aurelys_v1') loadLegalPages();
+  });
+</script>
+
+</body>
+</html>

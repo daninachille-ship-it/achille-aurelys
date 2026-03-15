@@ -1,0 +1,50 @@
+# netlify.toml — Configuration Netlify pour Achille & Aurelys
+
+[build]
+  publish = "."
+
+# Redirections pour les routes propres (sans .html)
+[[redirects]]
+  from = "/admin"
+  to   = "/admin.html"
+  status = 200
+
+[[redirects]]
+  from = "/legal"
+  to   = "/legal.html"
+  status = 200
+
+[[redirects]]
+  from = "/cgv"
+  to   = "/legal.html?page=cgv"
+  status = 302
+
+[[redirects]]
+  from = "/confidentialite"
+  to   = "/legal.html?page=privacy"
+  status = 302
+
+[[redirects]]
+  from = "/mentions-legales"
+  to   = "/legal.html?page=mentions"
+  status = 302
+
+# En-têtes de sécurité
+[[headers]]
+  for = "/*"
+  [headers.values]
+    X-Frame-Options = "SAMEORIGIN"
+    X-Content-Type-Options = "nosniff"
+    Referrer-Policy = "strict-origin-when-cross-origin"
+    Permissions-Policy = "camera=(), microphone=(), geolocation=()"
+
+# Cache pour les assets statiques
+[[headers]]
+  for = "/css/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+  for = "/js/*"
+  [headers.values]
+    Cache-Control = "public, max-age=31536000, immutable"

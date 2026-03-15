@@ -74,6 +74,19 @@ function applyContent(content) {
   const heroSubtitle = document.getElementById('hero-subtitle');
   if (heroSubtitle) heroSubtitle.textContent = hero.subtitle || '';
 
+  /* Images hero */
+  if (hero.heroImage) {
+    const mainImg = document.getElementById('hero-main-img');
+    if (mainImg) mainImg.src = hero.heroImage;
+  }
+  if (hero.heroImageSecondary) {
+    const secImg = document.getElementById('hero-secondary-img');
+    if (secImg) secImg.src = hero.heroImageSecondary;
+  }
+
+  /* Floating card : premier logement featured ou disponible */
+  _updateHeroCard(content);
+
   /* À propos */
   const aboutTitle = document.getElementById('about-title');
   if (aboutTitle) aboutTitle.textContent = ed.title || 'Une curation rigoureuse.';
@@ -102,6 +115,31 @@ function applyContent(content) {
   const cf = document.getElementById('contact-form');
   if (cf && global.globalFormspreeId && global.globalFormspreeId !== 'YOUR_FORMSPREE_ID') {
     cf.action = `https://formspree.io/f/${global.globalFormspreeId}`;
+  }
+}
+
+function _updateHeroCard(content) {
+  const data = AureStorage.getData();
+  const featured = (data.properties || [])
+    .filter(p => p.available !== false)
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))[0];
+  if (!featured) return;
+
+  const city     = featured.location?.city || '';
+  const area     = featured.location?.area || '';
+  const label    = [city, area].filter(Boolean).join(' · ');
+  const price    = featured.pricing?.perNight || 0;
+  const currency = featured.pricing?.currency || 'EUR';
+
+  const labelEl = document.getElementById('hero-floating-label');
+  const titleEl = document.getElementById('hero-floating-title');
+  const priceEl = document.getElementById('hero-floating-price');
+
+  if (labelEl && label) labelEl.textContent = label;
+  if (titleEl && featured.title) titleEl.textContent = featured.title;
+  if (priceEl && price) {
+    const sym = currency === 'EUR' ? '€' : currency === 'USD' ? '$' : currency;
+    priceEl.innerHTML = `${price} <span>${sym} / nuit</span>`;
   }
 }
 

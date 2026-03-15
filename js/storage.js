@@ -293,7 +293,9 @@ const DEFAULT_DATA = {
         title: 'Intemporel\npar choix.',
         subtitle: 'Des résidences d\'exception sélectionnées pour ceux qui refusent de choisir entre le confort et l\'élégance.',
         ctaPrimary: { label: 'Découvrir les résidences', href: '#logements' },
-        ctaSecondary: { label: 'Notre approche', href: '#a-propos' }
+        ctaSecondary: { label: 'Notre approche', href: '#a-propos' },
+        heroImage: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=900&q=85',
+        heroImageSecondary: 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb3?w=600&q=80'
       },
       editorial: {
         label: 'Notre approche',

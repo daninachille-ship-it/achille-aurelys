@@ -253,6 +253,22 @@
               <label class="field-label" for="text-hero-subtitle">Sous-titre</label>
               <textarea class="field-textarea" id="text-hero-subtitle" rows="2" placeholder="Des résidences d'exception…"></textarea>
             </div>
+            <div class="field-row">
+              <div class="field">
+                <label class="field-label" for="text-hero-image">Photo principale (URL)</label>
+                <input class="field-input" id="text-hero-image" type="url" placeholder="https://images.unsplash.com/...">
+                <p class="field-hint">Grande photo à droite du titre.</p>
+              </div>
+              <div class="field">
+                <label class="field-label" for="text-hero-image-secondary">Photo secondaire (URL)</label>
+                <input class="field-input" id="text-hero-image-secondary" type="url" placeholder="https://images.unsplash.com/...">
+                <p class="field-hint">Petite photo en superposition.</p>
+              </div>
+            </div>
+            <div class="field" id="hero-img-preview-wrap" style="display:none;">
+              <p class="field-label">Aperçu photo principale</p>
+              <img id="hero-img-preview" src="" alt="" style="max-height:140px; border-radius:8px; object-fit:cover; border:1px solid var(--border);">
+            </div>
           </div>
 
           <div class="form-section">

@@ -36,7 +36,7 @@ function handleLogin(e) {
   const data = Storage.getData();
   const error = document.getElementById('login-error');
 
-  if (pwd === data.settings.adminPassword) {
+  if (pwd === (data.content && data.content.global && data.content.global.adminPassword)) {
     sessionStorage.setItem('admin_auth', 'true');
     if (error) error.classList.remove('show');
     showAdminApp();
@@ -336,38 +336,53 @@ function deleteUpcoming(id) {
 
 // ── Textes du site ─────────────────────────────────────────── //
 function renderTextsForm() {
-  const s = adminData.settings;
-  setField('text-site-name', s.siteName);
-  setField('text-tagline', s.tagline);
-  setField('text-hero-title', s.heroTitle);
-  setField('text-hero-subtitle', s.heroSubtitle);
-  setField('text-about-title', s.aboutTitle);
-  setField('text-about-body', s.aboutText);
-  setField('text-newsletter-title', s.newsletterTitle);
-  setField('text-newsletter-text', s.newsletterText);
-  setField('text-contact-email', s.contactEmail);
-  setField('text-phone', s.phone);
-  setField('text-address', s.address);
-  setField('text-formspree', s.formspreeId);
-  setField('text-instagram', s.instagramUrl);
-  setField('text-linkedin', s.linkedinUrl);
+  const g = (adminData.content && adminData.content.global) || {};
+  const h = (adminData.content && adminData.content.home && adminData.content.home.hero) || {};
+  const e = (adminData.content && adminData.content.home && adminData.content.home.editorial) || {};
+  const n = (adminData.content && adminData.content.home && adminData.content.home.newsletter) || {};
+  setField('text-site-name',        g.siteName);
+  setField('text-tagline',          g.tagline);
+  setField('text-hero-title',       h.title);
+  setField('text-hero-subtitle',    h.subtitle);
+  setField('text-about-title',      e.title);
+  setField('text-about-body',       e.body);
+  setField('text-newsletter-title', n.title);
+  setField('text-newsletter-text',  n.subtitle);
+  setField('text-contact-email',    g.contactEmail);
+  setField('text-phone',            g.phone);
+  setField('text-address',          g.address);
+  setField('text-formspree',        g.globalFormspreeId);
+  setField('text-instagram',        g.instagramUrl);
+  setField('text-linkedin',         g.linkedinUrl);
 }
 
 function saveTexts() {
-  adminData.settings.siteName       = getField('text-site-name');
-  adminData.settings.tagline        = getField('text-tagline');
-  adminData.settings.heroTitle      = getField('text-hero-title');
-  adminData.settings.heroSubtitle   = getField('text-hero-subtitle');
-  adminData.settings.aboutTitle     = getField('text-about-title');
-  adminData.settings.aboutText      = getField('text-about-body');
-  adminData.settings.newsletterTitle= getField('text-newsletter-title');
-  adminData.settings.newsletterText = getField('text-newsletter-text');
-  adminData.settings.contactEmail   = getField('text-contact-email');
-  adminData.settings.phone          = getField('text-phone');
-  adminData.settings.address        = getField('text-address');
-  adminData.settings.formspreeId    = getField('text-formspree');
-  adminData.settings.instagramUrl   = getField('text-instagram');
-  adminData.settings.linkedinUrl    = getField('text-linkedin');
+  if (!adminData.content) adminData.content = {};
+  if (!adminData.content.global) adminData.content.global = {};
+  if (!adminData.content.home) adminData.content.home = {};
+  if (!adminData.content.home.hero) adminData.content.home.hero = {};
+  if (!adminData.content.home.editorial) adminData.content.home.editorial = {};
+  if (!adminData.content.home.newsletter) adminData.content.home.newsletter = {};
+
+  const g = adminData.content.global;
+  const h = adminData.content.home.hero;
+  const e = adminData.content.home.editorial;
+  const n = adminData.content.home.newsletter;
+
+  g.siteName           = getField('text-site-name');
+  g.tagline            = getField('text-tagline');
+  h.title              = getField('text-hero-title');
+  h.subtitle           = getField('text-hero-subtitle');
+  e.title              = getField('text-about-title');
+  e.body               = getField('text-about-body');
+  n.title              = getField('text-newsletter-title');
+  n.subtitle           = getField('text-newsletter-text');
+  g.contactEmail       = getField('text-contact-email');
+  g.phone              = getField('text-phone');
+  g.address            = getField('text-address');
+  g.globalFormspreeId  = getField('text-formspree');
+  g.instagramUrl       = getField('text-instagram');
+  g.linkedinUrl        = getField('text-linkedin');
   Storage.saveData(adminData);
   showToast('Textes sauvegardés.');
 }
@@ -494,13 +509,15 @@ function renderReservations() {
 
 // ── Paramètres ─────────────────────────────────────────────── //
 function renderSettings() {
-  setField('settings-password', adminData.settings.adminPassword || '');
+  setField('settings-password', (adminData.content && adminData.content.global && adminData.content.global.adminPassword) || '');
 }
 
 function saveSettings() {
   const newPwd = getField('settings-password');
   if (newPwd.length < 6) { showToast('Le mot de passe doit contenir au moins 6 caractères.', 'error'); return; }
-  adminData.settings.adminPassword = newPwd;
+  if (!adminData.content) adminData.content = {};
+  if (!adminData.content.global) adminData.content.global = {};
+  adminData.content.global.adminPassword = newPwd;
   Storage.saveData(adminData);
   showToast('Paramètres sauvegardés.');
 }

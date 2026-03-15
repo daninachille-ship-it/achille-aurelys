@@ -294,8 +294,8 @@ const DEFAULT_DATA = {
         subtitle: 'Des résidences d\'exception sélectionnées pour ceux qui refusent de choisir entre le confort et l\'élégance.',
         ctaPrimary: { label: 'Découvrir les résidences', href: '#logements' },
         ctaSecondary: { label: 'Notre approche', href: '#a-propos' },
-        heroImage: 'https://images.unsplash.com/photo-1582719478250-c89cae4dc85b?w=900&q=85',
-        heroImageSecondary: 'https://images.unsplash.com/photo-1600210492486-724fe5c67fb3?w=600&q=80'
+        heroImage: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200&q=90',
+        heroImageSecondary: 'https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=700&q=85'
       },
       editorial: {
         label: 'Notre approche',

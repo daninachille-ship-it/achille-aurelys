@@ -12,6 +12,6 @@
  */
 
 window.AURELYS_CONFIG = {
-  supabaseUrl:      'YOUR_SUPABASE_URL',
-  supabaseAnonKey:  'YOUR_SUPABASE_ANON_KEY',
+  supabaseUrl:      'https://hasqciuieabqfuqkssja.supabase.co',
+  supabaseAnonKey:  'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imhhc3FjaXVpZWFicWZ1cWtzc2phIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzM2MDUyMzcsImV4cCI6MjA4OTE4MTIzN30.Wgtog0itfKkzg4HcXIfAotyzzq23e8ChUP43dB-SiZ8',
 };

@@ -13,16 +13,25 @@
   let _resMap     = null;
 
   /* ── Init ──────────────────────────────────────────────── */
-  document.addEventListener('DOMContentLoaded', () => {
+  document.addEventListener('DOMContentLoaded', async () => {
     const params = new URLSearchParams(window.location.search);
     const id     = params.get('id');
     const slug   = params.get('slug');
 
+    /* 1. Chercher dans le cache en mémoire (navigation depuis index) */
     const data = AureStorage.getData();
     const props = data.properties || [];
 
     if (id)   _property = props.find(p => p.id === id)   || null;
     if (slug) _property = props.find(p => p.slug === slug) || null;
+
+    /* 2. Si pas en cache, charger depuis Supabase (accès direct à l'URL) */
+    if (!_property && typeof AureDB !== 'undefined' && AureDB.isConfigured()) {
+      try {
+        if (id)            _property = await AureDB.getPropertyById(id);
+        if (!_property && slug) _property = await AureDB.getPropertyBySlug(slug);
+      } catch (e) { /* silent — redirection ci-dessous */ }
+    }
 
     if (!_property) {
       window.location.replace('index.html');

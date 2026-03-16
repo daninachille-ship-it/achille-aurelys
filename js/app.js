@@ -284,6 +284,15 @@ function renderProperties(properties) {
     });
   });
 
+  /* Clic sur la carte → page logement avec toutes les photos */
+  grid.querySelectorAll('.property-card').forEach(card => {
+    card.style.cursor = 'pointer';
+    card.addEventListener('click', () => {
+      const id = card.dataset.propertyId;
+      if (id) window.location.href = `residence.html?id=${encodeURIComponent(id)}`;
+    });
+  });
+
   initFadeIn();
 }
 

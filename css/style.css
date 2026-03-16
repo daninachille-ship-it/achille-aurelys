@@ -2925,3 +2925,16 @@ a.contact-detail-value:hover { color: var(--color-accent); }
     margin-bottom: 28px;
   }
 }
+
+/* ── Page loader ─────────────────────────────────────────────── */
+.page-loader {
+  position: fixed;
+  inset: 0;
+  background: var(--bg, #0e0e0e);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.5s ease;
+}
+.page-loader.fade-out { opacity: 0; pointer-events: none; }

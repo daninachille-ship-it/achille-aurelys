@@ -1,162 +1,217 @@
 /**
- * admin.js — Panel d'administration AURELYS
- * Gestion complète du contenu via localStorage (schéma v2)
+ * admin.js — Panel d'administration AURELYS v3
+ * Authentification et persistance via Supabase (AureDB)
  */
 
-// ── État global ─────────────────────────────────────────────── //
-let adminData = null;
-let currentPanel = 'dashboard';
-let editingPropId = null;
-let editingUpcomingId = null;
-let currentLegalTab = 'cgv';
+'use strict';
 
-// ── Initialisation ───────────────────────────────────────────── //
+/* ── État global ────────────────────────────────────────────── */
+let _settings     = null;
+let _properties   = [];
+let _upcoming     = [];
+let _subscribers  = [];
+let _reservations = [];
+let _legalPages   = {};
+let _faqItems     = [];
+
+let _currentPanel    = 'dashboard';
+let _editingPropId   = null;
+let _editingUpcomId  = null;
+let _editingFaqId    = null;
+let _currentLegalTab = 'cgv';
+
+/* ── Init ───────────────────────────────────────────────────── */
 document.addEventListener('DOMContentLoaded', () => {
-  document.getElementById('admin-app').style.display = 'none';
+  document.getElementById('admin-app').style.display   = 'none';
   document.getElementById('admin-login').style.display = 'flex';
 
   const loginForm = document.getElementById('login-form');
   if (loginForm) loginForm.addEventListener('submit', handleLogin);
 
-  if (sessionStorage.getItem('admin_auth') === 'true') {
-    showAdminApp();
-  }
+  _checkSession();
 });
 
-// ── Connexion ────────────────────────────────────────────────── //
-function handleLogin(e) {
-  e.preventDefault();
-  const pwd = document.getElementById('admin-password')?.value?.trim();
-  const data = Storage.getData();
-  const error = document.getElementById('login-error');
-  const stored = data.content && data.content.global && data.content.global.adminPassword;
+async function _checkSession() {
+  try {
+    const session = await AureDB.getSession();
+    if (session) _showAdminApp();
+  } catch { /* pas de session — afficher le formulaire */ }
+}
 
-  if (pwd === stored) {
-    sessionStorage.setItem('admin_auth', 'true');
-    if (error) error.classList.remove('show');
-    showAdminApp();
-  } else {
-    if (error) error.classList.add('show');
-    document.getElementById('admin-password').value = '';
-    document.getElementById('admin-password').focus();
+/* ── Connexion ──────────────────────────────────────────────── */
+async function handleLogin(e) {
+  e.preventDefault();
+  const emailEl = document.getElementById('admin-email');
+  const pwdEl   = document.getElementById('admin-password');
+  const errorEl = document.getElementById('login-error');
+  const btnEl   = document.getElementById('login-btn');
+
+  const email    = emailEl?.value?.trim();
+  const password = pwdEl?.value?.trim();
+
+  if (!email || !password) {
+    if (errorEl) { errorEl.textContent = 'Email et mot de passe requis.'; errorEl.classList.add('show'); }
+    return;
+  }
+
+  if (btnEl) { btnEl.disabled = true; btnEl.textContent = 'Connexion...'; }
+  if (errorEl) errorEl.classList.remove('show');
+
+  try {
+    if (!AureDB.isConfigured()) {
+      throw new Error('Supabase non configur\u00e9. Remplissez js/config.js avec vos identifiants.');
+    }
+    await AureDB.signIn(email, password);
+    _showAdminApp();
+  } catch (err) {
+    const msg = err.message && err.message.includes('Invalid login')
+      ? 'Email ou mot de passe incorrect.'
+      : err.message || 'Erreur de connexion.';
+    if (errorEl) { errorEl.textContent = msg; errorEl.classList.add('show'); }
+    if (pwdEl) { pwdEl.value = ''; pwdEl.focus(); }
+  } finally {
+    if (btnEl) { btnEl.disabled = false; btnEl.textContent = 'Acc\u00e9der'; }
   }
 }
 
-function logout() {
-  sessionStorage.removeItem('admin_auth');
-  document.getElementById('admin-app').style.display = 'none';
+async function logout() {
+  await AureDB.signOut();
+  document.getElementById('admin-app').style.display   = 'none';
   document.getElementById('admin-login').style.display = 'flex';
-  document.getElementById('admin-password').value = '';
+  const pwdEl = document.getElementById('admin-password');
+  if (pwdEl) pwdEl.value = '';
 }
 
-// ── Afficher l'interface admin ───────────────────────────────── //
-function showAdminApp() {
-  adminData = Storage.getData();
+/* ── Interface admin ────────────────────────────────────────── */
+async function _showAdminApp() {
   document.getElementById('admin-login').style.display = 'none';
-  document.getElementById('admin-app').style.display = 'flex';
+  document.getElementById('admin-app').style.display   = 'flex';
   document.getElementById('admin-app').classList.add('visible');
+  await _loadAllData();
   loadPanel('dashboard');
 }
 
-// ── Navigation ───────────────────────────────────────────────── //
+async function _loadAllData() {
+  try {
+    const [props, upcoming, settings, subscribers, reservations, legalPages, faqItems] = await Promise.all([
+      AureDB.getProperties(),
+      AureDB.getUpcomingProperties(),
+      AureDB.getSettings(),
+      AureDB.getSubscribers(),
+      AureDB.getReservations(),
+      AureDB.getLegalPages(),
+      AureDB.getFaqItems()
+    ]);
+    _properties   = props;
+    _upcoming     = upcoming;
+    _settings     = settings;
+    _subscribers  = subscribers;
+    _reservations = reservations;
+    _legalPages   = legalPages;
+    _faqItems     = faqItems;
+  } catch (err) {
+    showToast('Erreur de chargement : ' + err.message, 'error');
+  }
+}
+
+/* ── Navigation ─────────────────────────────────────────────── */
 function loadPanel(name) {
-  currentPanel = name;
+  _currentPanel = name;
 
   document.querySelectorAll('.nav-item').forEach(item => {
-    item.classList.toggle('active', item.dataset.panel === name);
-    if (item.dataset.panel === name) item.setAttribute('aria-current', 'page');
-    else item.removeAttribute('aria-current');
+    const active = item.dataset.panel === name;
+    item.classList.toggle('active', active);
+    active ? item.setAttribute('aria-current', 'page') : item.removeAttribute('aria-current');
   });
 
   const titles = {
     dashboard:    'Tableau de bord',
     properties:   'Logements',
-    upcoming:     'Logements à venir',
-    texts:        'Textes du site',
-    legal:        'Pages légales',
+    upcoming:     'Logements \u00e0 venir',
+    texts:        'Contenu du site',
+    footer:       'Footer & Liens',
+    legal:        'Pages l\u00e9gales',
+    faq:          'FAQ',
     payment:      'Liens de paiement',
     newsletter:   'Newsletter',
-    reservations: 'Réservations',
-    settings:     'Paramètres'
+    reservations: 'R\u00e9servations',
+    availability: 'Disponibilit\u00e9',
+    settings:     'Param\u00e8tres'
   };
+
   const topbarTitle = document.getElementById('topbar-title');
   if (topbarTitle) topbarTitle.textContent = titles[name] || name;
 
   document.querySelectorAll('.admin-panel').forEach(p => p.classList.remove('active'));
-
-  const panel = document.getElementById(`panel-${name}`);
+  const panel = document.getElementById('panel-' + name);
   if (panel) {
     panel.classList.add('active');
-    refreshPanel(name);
+    _refreshPanel(name);
   }
 }
 
-function refreshPanel(name) {
-  adminData = Storage.getData();
+async function _refreshPanel(name) {
+  await _loadAllData();
   switch (name) {
-    case 'dashboard':    renderDashboard(); break;
-    case 'properties':   renderPropertiesAdmin(); break;
-    case 'upcoming':     renderUpcomingAdmin(); break;
-    case 'texts':        renderTextsForm(); break;
-    case 'legal':        renderLegalEditor(); break;
-    case 'payment':      renderPaymentLinks(); break;
-    case 'newsletter':   renderNewsletter(); break;
-    case 'reservations': renderReservations(); break;
-    case 'settings':     renderSettings(); break;
+    case 'dashboard':    _renderDashboard();    break;
+    case 'properties':   _renderProperties();   break;
+    case 'upcoming':     _renderUpcoming();     break;
+    case 'texts':        _renderTextsForm();    break;
+    case 'footer':       _renderFooterForm();   break;
+    case 'legal':        _renderLegal();        break;
+    case 'faq':          _renderFaq();          break;
+    case 'payment':      _renderPaymentLinks(); break;
+    case 'newsletter':   _renderNewsletter();   break;
+    case 'reservations': _renderReservations(); break;
+    case 'availability': _renderAvailability(); break;
+    case 'settings':     _renderSettings();     break;
   }
 }
 
-// ── Dashboard ────────────────────────────────────────────────── //
-function renderDashboard() {
-  const d = adminData;
-  setInner('stat-properties', d.properties.filter(p => p.available).length);
-  setInner('stat-upcoming', d.upcomingProperties.length);
-  setInner('stat-subscribers', d.subscribers.length);
-  setInner('stat-reservations', d.reservations.length);
+/* ── Dashboard ──────────────────────────────────────────────── */
+function _renderDashboard() {
+  _setInner('stat-properties',   _properties.filter(p => p.available).length);
+  _setInner('stat-upcoming',     _upcoming.length);
+  _setInner('stat-subscribers',  _subscribers.length);
+  _setInner('stat-reservations', _reservations.length);
+
+  const cfgBanner = document.getElementById('supabase-config-banner');
+  if (cfgBanner) cfgBanner.style.display = AureDB.isConfigured() ? 'none' : '';
 }
 
-// ── Logements ────────────────────────────────────────────────── //
-function renderPropertiesAdmin() {
+/* ── Logements ──────────────────────────────────────────────── */
+function _renderProperties() {
   const list = document.getElementById('properties-list');
   if (!list) return;
-
-  const props = adminData.properties;
-  if (props.length === 0) {
-    list.innerHTML = emptyState('Aucun logement. Cliquez sur "Ajouter" pour commencer.');
-    return;
-  }
-
-  list.innerHTML = props
+  if (_properties.length === 0) { list.innerHTML = _emptyState('Aucun logement. Cliquez sur "Ajouter" pour commencer.'); return; }
+  list.innerHTML = [..._properties]
     .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
-    .map(p => propItemHTML(p))
-    .join('');
+    .map(p => _propItemHTML(p)).join('');
 }
 
-function propItemHTML(p) {
-  const city    = p.location?.city    || '';
-  const country = p.location?.country || '';
-  const price   = p.pricing?.perNight || 0;
+function _propItemHTML(p) {
+  const city     = p.location?.city    || '';
+  const country  = p.location?.country || '';
+  const price    = p.pricing?.perNight || 0;
   const currency = p.pricing?.currency || 'EUR';
-  const cover   = p.media?.coverImage || '';
-  const lat     = p.location?.lat;
-  const lng     = p.location?.lng;
+  const cover    = p.media?.coverImage || '';
+  const lat      = p.location?.lat;
+  const lng      = p.location?.lng;
   const hasCoords = lat != null && lng != null;
 
-  return `
-    <div class="prop-item" id="prop-item-${p.id}">
-      <img class="prop-item-img" src="${esc(cover)}" alt="${esc(p.title || '')}"
+  return `<div class="prop-item" id="prop-item-${p.id}">
+      <img class="prop-item-img" src="${_esc(cover)}" alt="${_esc(p.title || '')}"
         onerror="this.src='https://images.unsplash.com/photo-1613977257363-707ba9348227?w=200&q=60'">
       <div class="prop-item-info">
-        <p class="prop-item-name">${esc(p.title || 'Sans titre')}</p>
+        <p class="prop-item-name">${_esc(p.title || 'Sans titre')}</p>
         <div class="prop-item-meta">
-          <span>${esc(city)}${country ? ', ' + esc(country) : ''}</span>
-          <span class="prop-item-price">${price} ${esc(currency)} / nuit</span>
+          <span>${_esc(city)}${country ? ', ' + _esc(country) : ''}</span>
+          <span class="prop-item-price">${price} ${_esc(currency)} / nuit</span>
           ${hasCoords
             ? `<span class="prop-item-coords">${lat.toFixed(4)}, ${lng.toFixed(4)}</span>`
-            : '<span class="prop-item-coords" style="color:var(--danger-dim)">Pas de coordonnées GPS</span>'}
+            : '<span class="prop-item-coords" style="color:var(--danger-dim)">GPS manquant</span>'}
           <span class="badge ${p.available ? 'badge-available' : 'badge-unavailable'}">
-            ${p.available ? 'Disponible' : 'Indisponible'}
-          </span>
+            ${p.available ? 'Disponible' : 'Indisponible'}</span>
         </div>
       </div>
       <div class="prop-item-actions">
@@ -167,532 +222,645 @@ function propItemHTML(p) {
 }
 
 function openAddProperty() {
-  editingPropId = null;
-  resetPropertyForm();
+  _editingPropId = null;
+  _resetPropertyForm();
   document.getElementById('prop-modal-title').textContent = 'Ajouter un logement';
-  openModal('prop-modal');
+  _openModal('prop-modal');
 }
 
 function editProperty(id) {
-  editingPropId = id;
-  const p = adminData.properties.find(x => x.id === id);
+  _editingPropId = id;
+  const p = _properties.find(x => x.id === id);
   if (!p) return;
-
-  // Infos de base
-  setField('prop-title',       p.title || '');
-  setField('prop-subtitle',    p.subtitle || '');
-  setField('prop-description', p.description || '');
-
-  // Localisation
-  setField('prop-city',    p.location?.city    || '');
-  setField('prop-country', p.location?.country || '');
-  setField('prop-address', p.location?.address || '');
-  setField('prop-area',    p.location?.area    || '');
-  setField('prop-lat',     p.location?.lat     ?? '');
-  setField('prop-lng',     p.location?.lng     ?? '');
-
-  // Prix & capacité
-  setField('prop-price',        p.pricing?.perNight     ?? '');
-  setField('prop-cleaning-fee', p.pricing?.cleaningFee  ?? '');
-  setField('prop-currency',     p.pricing?.currency     || 'EUR');
-  setField('prop-min-stay',     p.pricing?.minimumStay  ?? '');
-  setField('prop-guests',       p.capacity?.guests      ?? '');
-  setField('prop-bedrooms',     p.capacity?.bedrooms    ?? '');
-  setField('prop-beds',         p.capacity?.beds        ?? '');
-  setField('prop-bathrooms',    p.capacity?.bathrooms   ?? '');
-  setField('prop-checkin',      p.checkIn   || '');
-  setField('prop-checkout',     p.checkOut  || '');
-
-  // Médias
-  setField('prop-cover',   p.media?.coverImage  || '');
-  setField('prop-gallery', (p.media?.gallery || []).join('\n'));
-
-  // Équipements & règles
-  setField('prop-amenities', (p.amenities || []).join('\n'));
-  setField('prop-rules',     (p.rules     || []).join('\n'));
-
-  // Réservation
-  setField('prop-payment-link',   p.paymentLink   || '');
-  setField('prop-contact-email',  p.contactEmail  || '');
-  setField('prop-formspree',      p.formspreeId   || '');
-
-  // Options
-  setCheckbox('prop-available', p.available !== false);
-  setCheckbox('prop-featured',  !!p.featured);
-
+  _setField('prop-title',          p.title || '');
+  _setField('prop-subtitle',       p.subtitle || '');
+  _setField('prop-short-desc',     p.shortDescription || '');
+  _setField('prop-description',    p.description || '');
+  _setField('prop-city',           p.location?.city    || '');
+  _setField('prop-country',        p.location?.country || '');
+  _setField('prop-address',        p.location?.address || '');
+  _setField('prop-area',           p.location?.area    || '');
+  _setField('prop-lat',            p.location?.lat     ?? '');
+  _setField('prop-lng',            p.location?.lng     ?? '');
+  _setField('prop-price',          p.pricing?.perNight    ?? '');
+  _setField('prop-cleaning-fee',   p.pricing?.cleaningFee ?? '');
+  _setField('prop-currency',       p.pricing?.currency    || 'EUR');
+  _setField('prop-min-stay',       p.pricing?.minimumStay ?? '');
+  _setField('prop-guests',         p.capacity?.guests    ?? '');
+  _setField('prop-bedrooms',       p.capacity?.bedrooms  ?? '');
+  _setField('prop-beds',           p.capacity?.beds      ?? '');
+  _setField('prop-bathrooms',      p.capacity?.bathrooms ?? '');
+  _setField('prop-checkin',        p.checkIn  || '');
+  _setField('prop-checkout',       p.checkOut || '');
+  _setField('prop-cover',          p.media?.coverImage  || '');
+  _setField('prop-gallery',        (p.media?.gallery || []).join('\n'));
+  _setField('prop-amenities',      (p.amenities || []).join('\n'));
+  _setField('prop-rules',          (p.rules     || []).join('\n'));
+  _setField('prop-badges',         (p.badges    || []).join('\n'));
+  _setField('prop-payment-link',   p.paymentLink   || '');
+  _setField('prop-contact-email',  p.contactEmail  || '');
+  _setField('prop-formspree',      p.formspreeId   || '');
+  _setField('prop-seo-title',      p.seo?.title       || '');
+  _setField('prop-seo-desc',       p.seo?.description || '');
+  _setCheckbox('prop-available',   p.available !== false);
+  _setCheckbox('prop-featured',    !!p.featured);
   document.getElementById('prop-modal-title').textContent = 'Modifier le logement';
-  openModal('prop-modal');
+  _openModal('prop-modal');
 }
 
-function saveProperty() {
-  const title = getField('prop-title').trim();
-  const city  = getField('prop-city').trim();
+async function saveProperty() {
+  const title = _getField('prop-title').trim();
+  const city  = _getField('prop-city').trim();
   if (!title) { showToast('Le titre est requis.', 'error'); return; }
   if (!city)  { showToast('La ville est requise.', 'error'); return; }
 
-  const latRaw = getField('prop-lat');
-  const lngRaw = getField('prop-lng');
+  const latRaw = _getField('prop-lat');
+  const lngRaw = _getField('prop-lng');
+  const existingProp = _editingPropId ? _properties.find(x => x.id === _editingPropId) : null;
 
   const prop = {
-    id:          editingPropId || Storage.generateId('prop'),
-    slug:        Storage.slugify(title),
+    id:               _editingPropId || AureDB.generateId('prop'),
+    slug:             AureDB.slugify(title),
     title,
-    subtitle:    getField('prop-subtitle'),
-    description: getField('prop-description'),
-    shortDescription: '',
+    subtitle:         _getField('prop-subtitle'),
+    shortDescription: _getField('prop-short-desc'),
+    description:      _getField('prop-description'),
     location: {
-      city,
-      country:  getField('prop-country'),
-      address:  getField('prop-address'),
-      area:     getField('prop-area'),
-      lat:      latRaw !== '' ? parseFloat(latRaw) : null,
-      lng:      lngRaw !== '' ? parseFloat(lngRaw) : null
-    },
-    pricing: {
-      perNight:    parseFloat(getField('prop-price'))        || 0,
-      cleaningFee: parseFloat(getField('prop-cleaning-fee')) || 0,
-      currency:    getField('prop-currency') || 'EUR',
-      minimumStay: parseInt(getField('prop-min-stay'))       || 1
-    },
-    capacity: {
-      guests:    parseInt(getField('prop-guests'))    || 0,
-      bedrooms:  parseInt(getField('prop-bedrooms'))  || 0,
-      beds:      parseInt(getField('prop-beds'))      || 0,
-      bathrooms: parseInt(getField('prop-bathrooms')) || 0
-    },
-    media: {
-      coverImage: getField('prop-cover'),
-      gallery: getField('prop-gallery').split('\n').map(s => s.trim()).filter(Boolean)
-    },
-    amenities:  getField('prop-amenities').split('\n').map(s => s.trim()).filter(Boolean),
-    rules:      getField('prop-rules').split('\n').map(s => s.trim()).filter(Boolean),
-    checkIn:    getField('prop-checkin')  || '15h00',
-    checkOut:   getField('prop-checkout') || '11h00',
-    badges:     [],
-    featured:   getCheckbox('prop-featured'),
-    upcoming:   false,
-    available:  getCheckbox('prop-available'),
-    paymentLink:   getField('prop-payment-link'),
-    contactEmail:  getField('prop-contact-email'),
-    formspreeId:   getField('prop-formspree'),
-    seo: { title: `${title} — AURELYS`, description: '' },
-    blockedDates: [],
-    order: 0
-  };
-
-  if (editingPropId) {
-    const idx = adminData.properties.findIndex(x => x.id === editingPropId);
-    if (idx !== -1) {
-      prop.order = adminData.properties[idx].order;
-      prop.blockedDates = adminData.properties[idx].blockedDates || [];
-      prop.seo = adminData.properties[idx].seo || prop.seo;
-      adminData.properties[idx] = prop;
-    }
-  } else {
-    prop.order = adminData.properties.length;
-    adminData.properties.push(prop);
-  }
-
-  Storage.saveData(adminData);
-  closeModal('prop-modal');
-  renderPropertiesAdmin();
-  showToast(editingPropId ? 'Logement mis à jour.' : 'Logement ajouté.');
-}
-
-function deleteProperty(id) {
-  if (!confirm('Supprimer ce logement définitivement ?')) return;
-  adminData.properties = adminData.properties.filter(p => p.id !== id);
-  Storage.saveData(adminData);
-  renderPropertiesAdmin();
-  showToast('Logement supprimé.');
-}
-
-function resetPropertyForm() {
-  [
-    'prop-title','prop-subtitle','prop-description',
-    'prop-city','prop-country','prop-address','prop-area','prop-lat','prop-lng',
-    'prop-price','prop-cleaning-fee','prop-min-stay',
-    'prop-guests','prop-bedrooms','prop-beds','prop-bathrooms',
-    'prop-checkin','prop-checkout',
-    'prop-cover','prop-gallery',
-    'prop-amenities','prop-rules',
-    'prop-payment-link','prop-contact-email','prop-formspree'
-  ].forEach(id => setField(id, ''));
-  setField('prop-currency', 'EUR');
-  setCheckbox('prop-available', true);
-  setCheckbox('prop-featured', false);
-}
-
-// ── Logements à venir ────────────────────────────────────────── //
-function renderUpcomingAdmin() {
-  const list = document.getElementById('upcoming-list');
-  if (!list) return;
-
-  const items = adminData.upcomingProperties;
-  if (items.length === 0) {
-    list.innerHTML = emptyState('Aucun logement à venir programmé.');
-    return;
-  }
-
-  list.innerHTML = items.map(u => {
-    const city    = u.location?.city    || '';
-    const country = u.location?.country || '';
-    const cover   = u.media?.coverImage || '';
-    return `
-      <div class="prop-item">
-        <img class="prop-item-img" src="${esc(cover)}" alt="${esc(u.title || '')}"
-          onerror="this.src='https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=200&q=60'">
-        <div class="prop-item-info">
-          <p class="prop-item-name">${esc(u.title || 'Sans titre')}</p>
-          <div class="prop-item-meta">
-            <span>${esc(city)}${country ? ', ' + esc(country) : ''}</span>
-            <span>${formatExpectedDate(u.expectedDate)}</span>
-          </div>
-        </div>
-        <div class="prop-item-actions">
-          <button class="btn btn-secondary btn-sm" onclick="editUpcoming('${u.id}')">Modifier</button>
-          <button class="btn btn-danger btn-sm" onclick="deleteUpcoming('${u.id}')">Supprimer</button>
-        </div>
-      </div>`;
-  }).join('');
-}
-
-function openAddUpcoming() {
-  editingUpcomingId = null;
-  ['upcoming-title','upcoming-subtitle','upcoming-city','upcoming-country',
-   'upcoming-lat','upcoming-lng','upcoming-date','upcoming-description','upcoming-image']
-    .forEach(id => setField(id, ''));
-  document.getElementById('upcoming-modal-title').textContent = 'Ajouter un logement à venir';
-  openModal('upcoming-modal');
-}
-
-function editUpcoming(id) {
-  editingUpcomingId = id;
-  const u = adminData.upcomingProperties.find(x => x.id === id);
-  if (!u) return;
-
-  setField('upcoming-title',       u.title || '');
-  setField('upcoming-subtitle',    u.subtitle || '');
-  setField('upcoming-city',        u.location?.city    || '');
-  setField('upcoming-country',     u.location?.country || '');
-  setField('upcoming-lat',         u.location?.lat     ?? '');
-  setField('upcoming-lng',         u.location?.lng     ?? '');
-  setField('upcoming-date',        u.expectedDate || '');
-  setField('upcoming-description', u.description  || '');
-  setField('upcoming-image',       u.media?.coverImage || '');
-
-  document.getElementById('upcoming-modal-title').textContent = 'Modifier le logement à venir';
-  openModal('upcoming-modal');
-}
-
-function saveUpcoming() {
-  const title = getField('upcoming-title').trim();
-  const city  = getField('upcoming-city').trim();
-  if (!title) { showToast('Le titre est requis.', 'error'); return; }
-
-  const latRaw = getField('upcoming-lat');
-  const lngRaw = getField('upcoming-lng');
-
-  const item = {
-    id:          editingUpcomingId || Storage.generateId('upcoming'),
-    slug:        Storage.slugify(title),
-    title,
-    subtitle:    getField('upcoming-subtitle'),
-    location: {
-      city,
-      country: getField('upcoming-country'),
+      city, country: _getField('prop-country'),
+      address: _getField('prop-address'), area: _getField('prop-area'),
       lat: latRaw !== '' ? parseFloat(latRaw) : null,
       lng: lngRaw !== '' ? parseFloat(lngRaw) : null
     },
-    expectedDate: getField('upcoming-date'),
-    description:  getField('upcoming-description'),
-    media: { coverImage: getField('upcoming-image') }
+    pricing: {
+      perNight:    parseFloat(_getField('prop-price'))        || 0,
+      cleaningFee: parseFloat(_getField('prop-cleaning-fee')) || 0,
+      currency:    _getField('prop-currency') || 'EUR',
+      minimumStay: parseInt(_getField('prop-min-stay'))       || 1
+    },
+    capacity: {
+      guests:    parseInt(_getField('prop-guests'))    || 0,
+      bedrooms:  parseInt(_getField('prop-bedrooms'))  || 0,
+      beds:      parseInt(_getField('prop-beds'))      || 0,
+      bathrooms: parseInt(_getField('prop-bathrooms')) || 0
+    },
+    media: {
+      coverImage: _getField('prop-cover'),
+      gallery:    _getField('prop-gallery').split('\n').map(s => s.trim()).filter(Boolean)
+    },
+    amenities: _getField('prop-amenities').split('\n').map(s => s.trim()).filter(Boolean),
+    rules:     _getField('prop-rules').split('\n').map(s => s.trim()).filter(Boolean),
+    badges:    _getField('prop-badges').split('\n').map(s => s.trim()).filter(Boolean),
+    checkIn:   _getField('prop-checkin')  || '15h00',
+    checkOut:  _getField('prop-checkout') || '11h00',
+    featured:  _getCheckbox('prop-featured'),
+    available: _getCheckbox('prop-available'),
+    paymentLink:  _getField('prop-payment-link'),
+    contactEmail: _getField('prop-contact-email'),
+    formspreeId:  _getField('prop-formspree'),
+    seo: {
+      title:       _getField('prop-seo-title') || title + ' \u2014 AURELYS',
+      description: _getField('prop-seo-desc')
+    },
+    order: existingProp ? existingProp.order : _properties.length
   };
 
-  if (editingUpcomingId) {
-    const idx = adminData.upcomingProperties.findIndex(x => x.id === editingUpcomingId);
-    if (idx !== -1) adminData.upcomingProperties[idx] = item;
-  } else {
-    adminData.upcomingProperties.push(item);
+  try {
+    await AureDB.upsertProperty(prop);
+    _closeModal('prop-modal');
+    await _refreshPanel('properties');
+    showToast(_editingPropId ? 'Logement mis \u00e0 jour.' : 'Logement ajout\u00e9.');
+  } catch (err) {
+    showToast('Erreur : ' + err.message, 'error');
   }
-
-  Storage.saveData(adminData);
-  closeModal('upcoming-modal');
-  renderUpcomingAdmin();
-  showToast(editingUpcomingId ? 'Logement à venir mis à jour.' : 'Logement à venir ajouté.');
 }
 
-function deleteUpcoming(id) {
-  if (!confirm('Supprimer ce logement à venir ?')) return;
-  adminData.upcomingProperties = adminData.upcomingProperties.filter(u => u.id !== id);
-  Storage.saveData(adminData);
-  renderUpcomingAdmin();
-  showToast('Supprimé.');
+async function deleteProperty(id) {
+  if (!confirm('Supprimer ce logement d\u00e9finitivement\u00a0? Cette action est irr\u00e9versible.')) return;
+  try {
+    await AureDB.deleteProperty(id);
+    await _refreshPanel('properties');
+    showToast('Logement supprim\u00e9.');
+  } catch (err) {
+    showToast('Erreur : ' + err.message, 'error');
+  }
 }
 
-// ── Textes du site ────────────────────────────────────────────── //
-function renderTextsForm() {
-  const g = adminData.content?.global || {};
-  const h = adminData.content?.home?.hero || {};
-  const e = adminData.content?.home?.editorial || {};
-  const n = adminData.content?.home?.newsletter || {};
+function _resetPropertyForm() {
+  ['prop-title','prop-subtitle','prop-short-desc','prop-description',
+   'prop-city','prop-country','prop-address','prop-area','prop-lat','prop-lng',
+   'prop-price','prop-cleaning-fee','prop-min-stay',
+   'prop-guests','prop-bedrooms','prop-beds','prop-bathrooms',
+   'prop-checkin','prop-checkout','prop-cover','prop-gallery',
+   'prop-amenities','prop-rules','prop-badges',
+   'prop-payment-link','prop-contact-email','prop-formspree',
+   'prop-seo-title','prop-seo-desc'].forEach(id => _setField(id, ''));
+  _setField('prop-currency', 'EUR');
+  _setCheckbox('prop-available', true);
+  _setCheckbox('prop-featured', false);
+}
 
-  setField('text-site-name',        g.siteName);
-  setField('text-tagline',          g.tagline);
-  setField('text-hero-title',       h.title);
-  setField('text-hero-subtitle',    h.subtitle);
-  setField('text-about-title',      e.title);
-  setField('text-about-body',       e.body);
-  setField('text-newsletter-title', n.title);
-  setField('text-newsletter-text',  n.subtitle);
-  setField('text-hero-image',           h.heroImage           || '');
-  setField('text-hero-image-secondary', h.heroImageSecondary  || '');
+/* ── Logements à venir ──────────────────────────────────────── */
+function _renderUpcoming() {
+  const list = document.getElementById('upcoming-list');
+  if (!list) return;
+  if (_upcoming.length === 0) { list.innerHTML = _emptyState('Aucun logement \u00e0 venir programm\u00e9.'); return; }
+  list.innerHTML = _upcoming.map(u => `
+    <div class="prop-item">
+      <img class="prop-item-img" src="${_esc(u.media?.coverImage || '')}" alt="${_esc(u.title || '')}"
+        onerror="this.src='https://images.unsplash.com/photo-1580587771525-78b9dba3b914?w=200&q=60'">
+      <div class="prop-item-info">
+        <p class="prop-item-name">${_esc(u.title || 'Sans titre')}</p>
+        <div class="prop-item-meta">
+          <span>${_esc(u.location?.city || '')}${u.location?.country ? ', ' + _esc(u.location.country) : ''}</span>
+          <span>${_formatExpDate(u.expectedDate)}</span>
+        </div>
+      </div>
+      <div class="prop-item-actions">
+        <button class="btn btn-secondary btn-sm" onclick="editUpcoming('${u.id}')">Modifier</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteUpcoming('${u.id}')">Supprimer</button>
+      </div>
+    </div>`).join('');
+}
+
+function openAddUpcoming() {
+  _editingUpcomId = null;
+  ['upcoming-title','upcoming-subtitle','upcoming-city','upcoming-country',
+   'upcoming-lat','upcoming-lng','upcoming-date','upcoming-description','upcoming-image']
+    .forEach(id => _setField(id, ''));
+  document.getElementById('upcoming-modal-title').textContent = 'Ajouter un logement \u00e0 venir';
+  _openModal('upcoming-modal');
+}
+
+function editUpcoming(id) {
+  _editingUpcomId = id;
+  const u = _upcoming.find(x => x.id === id);
+  if (!u) return;
+  _setField('upcoming-title',       u.title || '');
+  _setField('upcoming-subtitle',    u.subtitle || '');
+  _setField('upcoming-city',        u.location?.city    || '');
+  _setField('upcoming-country',     u.location?.country || '');
+  _setField('upcoming-lat',         u.location?.lat     ?? '');
+  _setField('upcoming-lng',         u.location?.lng     ?? '');
+  _setField('upcoming-date',        u.expectedDate || '');
+  _setField('upcoming-description', u.description  || '');
+  _setField('upcoming-image',       u.media?.coverImage || '');
+  document.getElementById('upcoming-modal-title').textContent = 'Modifier le logement \u00e0 venir';
+  _openModal('upcoming-modal');
+}
+
+async function saveUpcoming() {
+  const title = _getField('upcoming-title').trim();
+  if (!title) { showToast('Le titre est requis.', 'error'); return; }
+  const latRaw = _getField('upcoming-lat');
+  const lngRaw = _getField('upcoming-lng');
+  const item = {
+    id:          _editingUpcomId || AureDB.generateId('upcoming'),
+    slug:        AureDB.slugify(title),
+    title,
+    subtitle:    _getField('upcoming-subtitle'),
+    description: _getField('upcoming-description'),
+    location: {
+      city:    _getField('upcoming-city'), country: _getField('upcoming-country'),
+      lat: latRaw !== '' ? parseFloat(latRaw) : null,
+      lng: lngRaw !== '' ? parseFloat(lngRaw) : null
+    },
+    expectedDate: _getField('upcoming-date'),
+    media: { coverImage: _getField('upcoming-image') },
+    order: _editingUpcomId
+      ? (_upcoming.find(x => x.id === _editingUpcomId)?.order ?? _upcoming.length)
+      : _upcoming.length
+  };
+  try {
+    await AureDB.upsertUpcomingProperty(item);
+    _closeModal('upcoming-modal');
+    await _refreshPanel('upcoming');
+    showToast(_editingUpcomId ? 'Logement \u00e0 venir mis \u00e0 jour.' : 'Logement \u00e0 venir ajout\u00e9.');
+  } catch (err) {
+    showToast('Erreur : ' + err.message, 'error');
+  }
+}
+
+async function deleteUpcoming(id) {
+  if (!confirm('Supprimer ce logement \u00e0 venir\u00a0?')) return;
+  try {
+    await AureDB.deleteUpcomingProperty(id);
+    await _refreshPanel('upcoming');
+    showToast('Supprim\u00e9.');
+  } catch (err) {
+    showToast('Erreur : ' + err.message, 'error');
+  }
+}
+
+/* ── Textes du site ─────────────────────────────────────────── */
+function _renderTextsForm() {
+  const g = _settings?.global || {};
+  const h = _settings?.home?.hero || {};
+  const e = _settings?.home?.editorial || {};
+  const n = _settings?.home?.newsletter || {};
+  _setField('text-tagline',               g.tagline);
+  _setField('text-hero-title',            h.title);
+  _setField('text-hero-subtitle',         h.subtitle);
+  _setField('text-hero-image',            h.heroImage || '');
+  _setField('text-hero-image-secondary',  h.heroImageSecondary || '');
+  _setField('text-about-title',           e.title);
+  _setField('text-about-body',            e.body);
+  _setField('text-newsletter-title',      n.title);
+  _setField('text-newsletter-text',       n.body);
+  _setField('text-contact-email',         g.contactEmail);
+  _setField('text-phone',                 g.contactPhone);
+  _setField('text-address',               g.address);
+  _setField('text-formspree',             g.globalFormspreeId);
+  _setField('text-instagram',             g.instagramUrl);
+  _setField('text-linkedin',              g.linkedinUrl);
   _updateHeroImgPreview(h.heroImage || '');
-
-  // Aperçu live quand l'URL change
   const imgInput = document.getElementById('text-hero-image');
   if (imgInput && !imgInput._previewBound) {
     imgInput._previewBound = true;
     imgInput.addEventListener('input', () => _updateHeroImgPreview(imgInput.value));
   }
-  setField('text-contact-email',    g.contactEmail);
-  setField('text-phone',            g.contactPhone);
-  setField('text-address',          g.address);
-  setField('text-formspree',        g.globalFormspreeId);
-  setField('text-instagram',        g.instagramUrl);
-  setField('text-linkedin',         g.linkedinUrl);
 }
 
-function saveTexts() {
-  if (!adminData.content)                adminData.content = {};
-  if (!adminData.content.global)         adminData.content.global = {};
-  if (!adminData.content.home)           adminData.content.home = {};
-  if (!adminData.content.home.hero)      adminData.content.home.hero = {};
-  if (!adminData.content.home.editorial) adminData.content.home.editorial = {};
-  if (!adminData.content.home.newsletter)adminData.content.home.newsletter = {};
-
-  const g = adminData.content.global;
-  const h = adminData.content.home.hero;
-  const e = adminData.content.home.editorial;
-  const n = adminData.content.home.newsletter;
-
-  g.siteName          = getField('text-site-name');
-  g.tagline           = getField('text-tagline');
-  h.title                = getField('text-hero-title');
-  h.subtitle             = getField('text-hero-subtitle');
-  h.heroImage            = getField('text-hero-image');
-  h.heroImageSecondary   = getField('text-hero-image-secondary');
-  e.title             = getField('text-about-title');
-  e.body              = getField('text-about-body');
-  n.title             = getField('text-newsletter-title');
-  n.subtitle          = getField('text-newsletter-text');
-  g.contactEmail      = getField('text-contact-email');
-  g.contactPhone      = getField('text-phone');
-  g.address           = getField('text-address');
-  g.globalFormspreeId = getField('text-formspree');
-  g.instagramUrl      = getField('text-instagram');
-  g.linkedinUrl       = getField('text-linkedin');
-
-  Storage.saveData(adminData);
-  showToast('Textes sauvegardés.');
+async function saveTexts() {
+  if (!_settings)                  _settings = {};
+  if (!_settings.global)           _settings.global = {};
+  if (!_settings.home)             _settings.home = {};
+  if (!_settings.home.hero)        _settings.home.hero = {};
+  if (!_settings.home.editorial)   _settings.home.editorial = {};
+  if (!_settings.home.newsletter)  _settings.home.newsletter = {};
+  const g = _settings.global;
+  const h = _settings.home.hero;
+  const e = _settings.home.editorial;
+  const n = _settings.home.newsletter;
+  g.tagline             = _getField('text-tagline');
+  h.title               = _getField('text-hero-title');
+  h.subtitle            = _getField('text-hero-subtitle');
+  h.heroImage           = _getField('text-hero-image');
+  h.heroImageSecondary  = _getField('text-hero-image-secondary');
+  e.title               = _getField('text-about-title');
+  e.body                = _getField('text-about-body');
+  n.title               = _getField('text-newsletter-title');
+  n.body                = _getField('text-newsletter-text');
+  g.contactEmail        = _getField('text-contact-email');
+  g.contactPhone        = _getField('text-phone');
+  g.address             = _getField('text-address');
+  g.globalFormspreeId   = _getField('text-formspree');
+  g.instagramUrl        = _getField('text-instagram');
+  g.linkedinUrl         = _getField('text-linkedin');
+  g.siteName            = 'AURELYS';
+  g.logoText            = 'AURELYS';
+  try {
+    await AureDB.saveSettings(_settings);
+    showToast('Textes sauvegrad\u00e9s. Visible sur le site public imm\u00e9diatement.');
+  } catch (err) {
+    showToast('Erreur : ' + err.message, 'error');
+  }
 }
 
-// ── Pages légales ──────────────────────────────────────────────── //
-function renderLegalEditor() {
-  switchLegalTab(currentLegalTab);
+/* ── Footer ─────────────────────────────────────────────────── */
+function _renderFooterForm() {
+  const f = _settings?.footer || {};
+  _setField('footer-description', f.description || '');
+  _setField('footer-copyright',   f.copyright   || '');
+  const colsEl = document.getElementById('footer-cols-editor');
+  if (colsEl) colsEl.value = JSON.stringify(f.columns || [], null, 2);
 }
 
-function switchLegalTab(tab) {
-  currentLegalTab = tab;
+async function saveFooter() {
+  if (!_settings)         _settings = {};
+  if (!_settings.footer)  _settings.footer = {};
+  _settings.footer.description = _getField('footer-description');
+  _settings.footer.copyright   = _getField('footer-copyright');
+  try {
+    const raw = document.getElementById('footer-cols-editor')?.value || '[]';
+    _settings.footer.columns = JSON.parse(raw);
+  } catch {
+    showToast('Format JSON des colonnes invalide.', 'error');
+    return;
+  }
+  try {
+    await AureDB.saveSettings(_settings);
+    showToast('Footer sauvegrad\u00e9.');
+  } catch (err) {
+    showToast('Erreur : ' + err.message, 'error');
+  }
+}
+
+/* ── Pages légales ──────────────────────────────────────────── */
+function _renderLegal() { _switchLegalTab(_currentLegalTab); }
+
+function _switchLegalTab(tab) {
+  _currentLegalTab = tab;
   document.querySelectorAll('.legal-tab').forEach(t => {
     t.classList.toggle('active', t.dataset.tab === tab);
     t.setAttribute('aria-selected', t.dataset.tab === tab ? 'true' : 'false');
   });
   const editor = document.getElementById('legal-editor');
-  if (editor) editor.value = adminData.content?.legalPages?.[tab] || '';
+  if (editor) editor.value = _legalPages[tab] || '';
 }
 
-function saveLegal() {
-  if (!adminData.content)             adminData.content = {};
-  if (!adminData.content.legalPages)  adminData.content.legalPages = {};
-  adminData.content.legalPages[currentLegalTab] = document.getElementById('legal-editor')?.value || '';
-  Storage.saveData(adminData);
-  showToast('Page légale sauvegardée.');
+async function saveLegal() {
+  const content = document.getElementById('legal-editor')?.value || '';
+  try {
+    await AureDB.saveLegalPage(_currentLegalTab, content);
+    _legalPages[_currentLegalTab] = content;
+    showToast('Page l\u00e9gale sauvegrad\u00e9e.');
+  } catch (err) {
+    showToast('Erreur : ' + err.message, 'error');
+  }
 }
 
-// ── Liens de paiement ─────────────────────────────────────────── //
-function renderPaymentLinks() {
+/* ── FAQ ────────────────────────────────────────────────────── */
+function _renderFaq() {
+  const list = document.getElementById('faq-list-admin');
+  if (!list) return;
+  if (_faqItems.length === 0) { list.innerHTML = _emptyState('Aucune question pour le moment.'); return; }
+  list.innerHTML = [..._faqItems]
+    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))
+    .map(item => `
+      <div class="prop-item">
+        <div class="prop-item-info" style="flex:1;">
+          <p class="prop-item-name">${_esc(item.question)}</p>
+          <p class="prop-item-meta" style="margin-top:4px;white-space:normal;">
+            ${_esc(item.answer.slice(0, 120))}${item.answer.length > 120 ? '\u2026' : ''}</p>
+        </div>
+        <div class="prop-item-actions">
+          <button class="btn btn-secondary btn-sm" onclick="editFaq('${item.id}')">Modifier</button>
+          <button class="btn btn-danger btn-sm" onclick="deleteFaq('${item.id}')">Supprimer</button>
+        </div>
+      </div>`).join('');
+}
+
+function openAddFaq() {
+  _editingFaqId = null;
+  _setField('faq-question', '');
+  _setField('faq-answer',   '');
+  document.getElementById('faq-modal-title').textContent = 'Ajouter une question';
+  _openModal('faq-modal');
+}
+
+function editFaq(id) {
+  _editingFaqId = id;
+  const item = _faqItems.find(x => x.id === id);
+  if (!item) return;
+  _setField('faq-question', item.question);
+  _setField('faq-answer',   item.answer);
+  document.getElementById('faq-modal-title').textContent = 'Modifier la question';
+  _openModal('faq-modal');
+}
+
+async function saveFaq() {
+  const question = _getField('faq-question').trim();
+  const answer   = _getField('faq-answer').trim();
+  if (!question || !answer) { showToast('Question et r\u00e9ponse requises.', 'error'); return; }
+  const item = {
+    id:       _editingFaqId || AureDB.generateId('faq'),
+    question, answer,
+    order: _editingFaqId
+      ? (_faqItems.find(x => x.id === _editingFaqId)?.order ?? _faqItems.length)
+      : _faqItems.length
+  };
+  try {
+    await AureDB.upsertFaqItem(item);
+    _closeModal('faq-modal');
+    await _refreshPanel('faq');
+    showToast(_editingFaqId ? 'Question mise \u00e0 jour.' : 'Question ajout\u00e9e.');
+  } catch (err) {
+    showToast('Erreur : ' + err.message, 'error');
+  }
+}
+
+async function deleteFaq(id) {
+  if (!confirm('Supprimer cette question\u00a0?')) return;
+  try {
+    await AureDB.deleteFaqItem(id);
+    await _refreshPanel('faq');
+    showToast('Question supprim\u00e9e.');
+  } catch (err) {
+    showToast('Erreur : ' + err.message, 'error');
+  }
+}
+
+/* ── Liens de paiement ──────────────────────────────────────── */
+function _renderPaymentLinks() {
   const container = document.getElementById('payment-links-list');
   if (!container) return;
-
-  const props = adminData.properties;
-  if (props.length === 0) {
-    container.innerHTML = `<p style="color:var(--text-muted); font-size:13px;">Aucun logement créé. Ajoutez des logements d'abord.</p>`;
+  if (_properties.length === 0) {
+    container.innerHTML = '<p style="color:var(--text-muted);font-size:13px;">Aucun logement cr\u00e9\u00e9.</p>';
     return;
   }
-
-  container.innerHTML = props.map(p => `
+  container.innerHTML = _properties.map(p => `
     <div class="payment-item">
       <div class="payment-item-header">
-        <img class="payment-item-img" src="${esc(p.media?.coverImage || '')}" alt=""
+        <img class="payment-item-img" src="${_esc(p.media?.coverImage || '')}" alt=""
           onerror="this.src='https://images.unsplash.com/photo-1613977257363-707ba9348227?w=100&q=60'">
         <div>
-          <p class="payment-item-name">${esc(p.title || 'Sans titre')}</p>
-          <p class="payment-item-location">${esc(p.location?.city || '')}${p.location?.country ? ', ' + esc(p.location.country) : ''}</p>
+          <p class="payment-item-name">${_esc(p.title || 'Sans titre')}</p>
+          <p class="payment-item-location">${_esc(p.location?.city || '')}${p.location?.country ? ', ' + _esc(p.location.country) : ''}</p>
         </div>
       </div>
-      <div class="field" style="margin-bottom:0;">
+      <div class="field" style="margin-bottom:8px;">
         <label class="field-label">Lien de paiement Stripe (ou autre)</label>
-        <input
-          class="field-input"
-          type="url"
-          placeholder="https://buy.stripe.com/..."
-          value="${esc(p.paymentLink || '')}"
-          id="payment-link-${p.id}"
-        >
+        <input class="field-input" type="url" placeholder="https://buy.stripe.com/..."
+          value="${_esc(p.paymentLink || '')}" id="pay-link-${p.id}">
+      </div>
+      <div class="field" style="margin-bottom:0;">
+        <label class="field-label">Email de contact pour ce logement</label>
+        <input class="field-input" type="email" placeholder="contact@aurelys.fr"
+          value="${_esc(p.contactEmail || '')}" id="pay-email-${p.id}">
       </div>
     </div>`).join('');
 }
 
-function savePaymentLinks() {
-  adminData.properties.forEach(p => {
-    const input = document.getElementById(`payment-link-${p.id}`);
-    if (input) p.paymentLink = input.value.trim();
+async function savePaymentLinks() {
+  const updates = _properties.map(p => {
+    const linkEl  = document.getElementById('pay-link-' + p.id);
+    const emailEl = document.getElementById('pay-email-' + p.id);
+    return { ...p,
+      paymentLink:  linkEl  ? linkEl.value.trim()  : p.paymentLink,
+      contactEmail: emailEl ? emailEl.value.trim() : p.contactEmail
+    };
   });
-  Storage.saveData(adminData);
-  showToast('Liens de paiement sauvegardés.');
+  try {
+    await Promise.all(updates.map(p => AureDB.upsertProperty(p)));
+    await _refreshPanel('payment');
+    showToast('Liens de paiement sauvegrad\u00e9s.');
+  } catch (err) {
+    showToast('Erreur : ' + err.message, 'error');
+  }
 }
 
-// ── Newsletter ────────────────────────────────────────────────── //
-function renderNewsletter() {
+/* ── Newsletter ─────────────────────────────────────────────── */
+function _renderNewsletter() {
   const tbody = document.getElementById('subscribers-body');
   if (!tbody) return;
-
-  const subs = adminData.subscribers || [];
-  if (subs.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="3" style="text-align:center; padding:40px; color:var(--text-muted);">Aucun abonné pour le moment.</td></tr>`;
-    setInner('subscribers-count', '0 abonné');
+  if (_subscribers.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:40px;color:var(--text-muted);">Aucun abonn\u00e9 pour le moment.</td></tr>';
+    _setInner('subscribers-count', '0 abonn\u00e9');
     return;
   }
-
-  setInner('subscribers-count', `${subs.length} abonné${subs.length > 1 ? 's' : ''}`);
-  tbody.innerHTML = subs.map((s, i) => `
+  _setInner('subscribers-count', _subscribers.length + ' abonn\u00e9' + (_subscribers.length > 1 ? 's' : ''));
+  tbody.innerHTML = _subscribers.map((s, i) => `
     <tr>
       <td>${i + 1}</td>
-      <td>${esc(s.email)}</td>
-      <td>${formatDate(s.date)}</td>
+      <td>${_esc(s.email)}</td>
+      <td>${_formatDate(s.subscribed_at || s.date)}</td>
+      <td><button class="btn btn-danger btn-xs" onclick="deleteSubscriber('${_esc(s.id)}')">Retirer</button></td>
     </tr>`).join('');
+}
+
+async function deleteSubscriber(id) {
+  if (!confirm('Retirer cet abonn\u00e9\u00a0?')) return;
+  try {
+    await AureDB.deleteSubscriber(id);
+    await _refreshPanel('newsletter');
+    showToast('Abonn\u00e9 retir\u00e9.');
+  } catch (err) {
+    showToast('Erreur : ' + err.message, 'error');
+  }
 }
 
 function exportSubscribers() {
-  const subs = adminData.subscribers || [];
-  if (subs.length === 0) { showToast('Aucun abonné à exporter.', 'error'); return; }
-
-  const csv = 'Email,Date\n' + subs.map(s => `"${s.email}","${s.date}"`).join('\n');
+  if (_subscribers.length === 0) { showToast('Aucun abonn\u00e9 \u00e0 exporter.', 'error'); return; }
+  const csv  = 'Email,Date\n' + _subscribers.map(s => `"${s.email}","${s.subscribed_at || s.date}"`).join('\n');
   const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'abonnes-newsletter.csv';
-  a.click();
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'abonnes-newsletter-' + new Date().toISOString().slice(0, 10) + '.csv'; a.click();
   URL.revokeObjectURL(url);
-  showToast('Export CSV téléchargé.');
+  showToast('Export CSV t\u00e9l\u00e9charg\u00e9.');
 }
 
-// ── Réservations ──────────────────────────────────────────────── //
-function renderReservations() {
+/* ── Réservations ───────────────────────────────────────────── */
+function _renderReservations() {
   const tbody = document.getElementById('reservations-body');
   if (!tbody) return;
-
-  const reservations = adminData.reservations || [];
-  if (reservations.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="6" style="text-align:center; padding:40px; color:var(--text-muted);">Aucune réservation pour le moment.</td></tr>`;
+  if (_reservations.length === 0) {
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted);">Aucune r\u00e9servation pour le moment.</td></tr>';
     return;
   }
-
-  tbody.innerHTML = [...reservations].reverse().map(r => `
-    <tr>
-      <td>${formatDate(r.createdAt)}</td>
-      <td>${esc(r.propName || r.propertyTitle || '')}</td>
-      <td>${esc(r.name || '')}</td>
-      <td>${esc(r.email || '')}</td>
-      <td>${esc(r.checkin || r.dates?.checkIn || '')} → ${esc(r.checkout || r.dates?.checkOut || '')}</td>
-      <td><span class="badge badge-available">${esc(r.status || '')}</span></td>
-    </tr>`).join('');
+  tbody.innerHTML = _reservations.map(r => {
+    const labels  = { pending: 'En attente', confirmed: 'Confirm\u00e9e', cancelled: 'Annul\u00e9e' };
+    const classes = { pending: 'badge-pending', confirmed: 'badge-available', cancelled: 'badge-unavailable' };
+    return `<tr>
+      <td>${_formatDate(r.created_at)}</td>
+      <td>${_esc(r.property_title || '')}</td>
+      <td>${_esc(r.guest_name || '')}</td>
+      <td>${_esc(r.guest_email || '')}</td>
+      <td>${_esc(r.check_in || '')} \u2192 ${_esc(r.check_out || '')}</td>
+      <td><span class="badge ${classes[r.status] || ''}">${labels[r.status] || r.status}</span></td>
+      <td>
+        ${r.status !== 'confirmed' ? `<button class="btn btn-secondary btn-xs" onclick="confirmReservation('${r.id}')">Confirmer</button>` : ''}
+        <button class="btn btn-danger btn-xs" onclick="cancelReservation('${r.id}')">Annuler</button>
+      </td>
+    </tr>`;
+  }).join('');
 }
 
-// ── Paramètres ────────────────────────────────────────────────── //
-function renderSettings() {
-  setField('settings-password', adminData.content?.global?.adminPassword || '');
+async function confirmReservation(id) {
+  try {
+    await AureDB.updateReservationStatus(id, 'confirmed');
+    await _refreshPanel('reservations');
+    showToast('R\u00e9servation confirm\u00e9e.');
+  } catch (err) { showToast('Erreur : ' + err.message, 'error'); }
 }
 
-function saveSettings() {
-  const newPwd = getField('settings-password');
-  if (newPwd.length < 6) { showToast('Le mot de passe doit contenir au moins 6 caractères.', 'error'); return; }
-  if (!adminData.content)        adminData.content = {};
-  if (!adminData.content.global) adminData.content.global = {};
-  adminData.content.global.adminPassword = newPwd;
-  Storage.saveData(adminData);
-  showToast('Mot de passe sauvegardé.');
+async function cancelReservation(id) {
+  if (!confirm('Annuler cette r\u00e9servation\u00a0?')) return;
+  try {
+    await AureDB.updateReservationStatus(id, 'cancelled');
+    await _refreshPanel('reservations');
+    showToast('R\u00e9servation annul\u00e9e.');
+  } catch (err) { showToast('Erreur : ' + err.message, 'error'); }
 }
 
-function confirmResetData() {
-  if (!confirm('Réinitialiser toutes les données aux valeurs par défaut ? Cette action est irréversible.')) return;
-  Storage.resetData();
-  adminData = Storage.getData();
-  showToast('Données réinitialisées.');
-  loadPanel('dashboard');
+/* ── Disponibilité ──────────────────────────────────────────── */
+function _renderAvailability() {
+  const propSel = document.getElementById('avail-property-select');
+  if (!propSel) return;
+  propSel.innerHTML = '<option value="">S\u00e9lectionner un logement</option>' +
+    _properties.map(p => `<option value="${_esc(p.id)}">${_esc(p.title)}</option>`).join('');
 }
 
-// ── Aperçu image hero ─────────────────────────────────────────── //
+async function loadAvailabilityForProperty(propId) {
+  if (!propId) return;
+  try {
+    const blocked = await AureDB.getAvailabilityBlocks(propId);
+    const list    = document.getElementById('blocked-dates-list');
+    if (!list) return;
+    if (blocked.length === 0) {
+      list.innerHTML = '<p style="color:var(--text-muted);font-size:13px;">Aucune date bloqu\u00e9e.</p>';
+      return;
+    }
+    list.innerHTML = blocked.sort().map(date => `
+      <div class="blocked-date-item">
+        <span>${date}</span>
+        <button class="btn btn-danger btn-xs" onclick="unblockDate('${_esc(propId)}','${date}')">D\u00e9bloquer</button>
+      </div>`).join('');
+  } catch (err) { showToast('Erreur : ' + err.message, 'error'); }
+}
+
+async function blockDate() {
+  const propId = _getField('avail-property-select');
+  const date   = _getField('avail-date-input');
+  const note   = _getField('avail-note-input');
+  if (!propId) { showToast('S\u00e9lectionnez un logement.', 'error'); return; }
+  if (!date)   { showToast('Saisissez une date.', 'error'); return; }
+  try {
+    await AureDB.createAvailabilityBlock(propId, date, note);
+    await loadAvailabilityForProperty(propId);
+    _setField('avail-date-input', ''); _setField('avail-note-input', '');
+    showToast('Date bloqu\u00e9e.');
+  } catch (err) { showToast('Erreur : ' + err.message, 'error'); }
+}
+
+async function unblockDate(propId, date) {
+  try {
+    await AureDB.deleteAvailabilityBlock(propId, date);
+    await loadAvailabilityForProperty(propId);
+    showToast('Date d\u00e9bloqu\u00e9e.');
+  } catch (err) { showToast('Erreur : ' + err.message, 'error'); }
+}
+
+/* ── Paramètres ─────────────────────────────────────────────── */
+function _renderSettings() {
+  const configured = AureDB.isConfigured();
+  _setInner('settings-supabase-status',
+    configured ? 'Supabase configur\u00e9 et connect\u00e9.' : 'Supabase non configur\u00e9. Remplissez js/config.js.');
+  const statusEl = document.getElementById('settings-supabase-status');
+  if (statusEl) statusEl.style.color = configured ? 'var(--success)' : 'var(--danger)';
+}
+
+async function exportBackup() {
+  const backup = {
+    exportedAt: new Date().toISOString(),
+    properties: _properties, upcoming: _upcoming,
+    settings:   _settings,  legalPages: _legalPages, faqItems: _faqItems
+  };
+  const json = JSON.stringify(backup, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url  = URL.createObjectURL(blob);
+  const a    = document.createElement('a');
+  a.href = url; a.download = 'aurelys-backup-' + new Date().toISOString().slice(0, 10) + '.json'; a.click();
+  URL.revokeObjectURL(url);
+  showToast('Backup export\u00e9.');
+}
+
+/* ── Aperçu image hero ──────────────────────────────────────── */
 function _updateHeroImgPreview(url) {
   const wrap = document.getElementById('hero-img-preview-wrap');
   const img  = document.getElementById('hero-img-preview');
   if (!wrap || !img) return;
-  if (url && url.startsWith('http')) {
-    img.src = url;
-    wrap.style.display = '';
-  } else {
-    wrap.style.display = 'none';
-  }
+  if (url && url.startsWith('http')) { img.src = url; wrap.style.display = ''; }
+  else { wrap.style.display = 'none'; }
 }
 
-// ── Utilitaires DOM ───────────────────────────────────────────── //
-function setInner(id, val) {
-  const el = document.getElementById(id);
-  if (el) el.textContent = val;
-}
-
-function setField(id, val) {
-  const el = document.getElementById(id);
-  if (!el) return;
-  if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT' || el.tagName === 'SELECT') {
-    el.value = val ?? '';
-  }
-}
-
-function getField(id) {
-  const el = document.getElementById(id);
-  return el ? el.value : '';
-}
-
-function setCheckbox(id, val) {
-  const el = document.getElementById(id);
-  if (el) el.checked = !!val;
-}
-
-function getCheckbox(id) {
-  const el = document.getElementById(id);
-  return el ? el.checked : false;
-}
-
-// ── Modals ────────────────────────────────────────────────────── //
-function openModal(id) {
+/* ── Modals ─────────────────────────────────────────────────── */
+function _openModal(id) {
   document.getElementById(id)?.classList.add('open');
   document.body.style.overflow = 'hidden';
 }
 
-function closeModal(id) {
+function _closeModal(id) {
   document.getElementById(id)?.classList.remove('open');
   document.body.style.overflow = '';
 }
@@ -704,7 +872,7 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// ── Toasts ────────────────────────────────────────────────────── //
+/* ── Toasts ─────────────────────────────────────────────────── */
 function showToast(message, type = 'success') {
   let container = document.querySelector('.toast-container');
   if (!container) {
@@ -712,95 +880,69 @@ function showToast(message, type = 'success') {
     container.className = 'toast-container';
     document.body.appendChild(container);
   }
-
   const toast = document.createElement('div');
-  toast.className = `toast toast-${type}`;
-  const mark = type === 'success' ? '✓' : '✕';
-  toast.innerHTML = `<span>${mark}</span> ${esc(message)}`;
+  toast.className = 'toast toast-' + type;
+  toast.innerHTML = '<span>' + (type === 'success' ? '\u2713' : '\u2715') + '</span> ' + _esc(message);
   container.appendChild(toast);
-
   requestAnimationFrame(() => requestAnimationFrame(() => toast.classList.add('show')));
-
-  setTimeout(() => {
-    toast.classList.remove('show');
-    setTimeout(() => toast.remove(), 400);
-  }, 3500);
+  setTimeout(() => { toast.classList.remove('show'); setTimeout(() => toast.remove(), 400); }, 4000);
 }
 
-// ── Utilitaires ───────────────────────────────────────────────── //
-function esc(str) {
-  return String(str ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+/* ── Utilitaires DOM ────────────────────────────────────────── */
+function _setInner(id, val) { const el = document.getElementById(id); if (el) el.textContent = val; }
+function _setField(id, val) {
+  const el = document.getElementById(id); if (!el) return;
+  if (el.tagName === 'TEXTAREA' || el.tagName === 'INPUT' || el.tagName === 'SELECT') el.value = val ?? '';
 }
-
-function emptyState(text) {
-  return `<div class="empty-state">
-    <p class="empty-state-mark">—</p>
-    <p class="empty-state-text">${text}</p>
-  </div>`;
+function _getField(id) { const el = document.getElementById(id); return el ? el.value : ''; }
+function _setCheckbox(id, val) { const el = document.getElementById(id); if (el) el.checked = !!val; }
+function _getCheckbox(id) { const el = document.getElementById(id); return el ? el.checked : false; }
+function _emptyState(text) {
+  return `<div class="empty-state"><p class="empty-state-mark">\u2014</p><p class="empty-state-text">${text}</p></div>`;
 }
-
-function formatDate(dateStr) {
-  if (!dateStr) return '—';
+function _formatDate(dateStr) {
+  if (!dateStr) return '\u2014';
+  try { return new Date(dateStr).toLocaleDateString('fr-FR', { day: '2-digit', month: 'short', year: 'numeric' }); }
+  catch { return dateStr; }
+}
+function _formatExpDate(dateStr) {
+  if (!dateStr) return 'Bient\u00f4t';
   try {
-    return new Date(dateStr).toLocaleDateString('fr-FR', {
-      day: '2-digit', month: 'short', year: 'numeric'
-    });
+    const [y, m] = dateStr.split('-');
+    return new Date(parseInt(y), parseInt(m || 1) - 1).toLocaleDateString('fr-FR', { month: 'long', year: 'numeric' });
   } catch { return dateStr; }
 }
-
-function formatExpectedDate(dateStr) {
-  if (!dateStr) return 'Bientôt';
-  try {
-    const [year, month] = dateStr.split('-');
-    return new Date(parseInt(year), parseInt(month) - 1).toLocaleDateString('fr-FR', {
-      month: 'long', year: 'numeric'
-    });
-  } catch { return dateStr; }
+function _esc(str) {
+  return String(str ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')
+    .replace(/"/g,'&quot;').replace(/'/g,'&#39;');
 }
 
-// ── Export / Import ───────────────────────────────────────────── //
-function exportBackup() { Storage.exportBackup(); }
-
-function importBackup() {
-  const input = document.createElement('input');
-  input.type = 'file';
-  input.accept = '.json';
-  input.onchange = (e) => {
-    const file = e.target.files[0];
-    if (!file) return;
-    Storage.importBackup(file, (err) => {
-      if (err) { showToast('Fichier invalide.', 'error'); return; }
-      adminData = Storage.getData();
-      showToast('Données importées avec succès.');
-      loadPanel(currentPanel);
-    });
-  };
-  input.click();
-}
-
-// ── Exposition globale ────────────────────────────────────────── //
-window.loadPanel         = loadPanel;
-window.openAddProperty   = openAddProperty;
-window.editProperty      = editProperty;
-window.saveProperty      = saveProperty;
-window.deleteProperty    = deleteProperty;
-window.openAddUpcoming   = openAddUpcoming;
-window.editUpcoming      = editUpcoming;
-window.saveUpcoming      = saveUpcoming;
-window.deleteUpcoming    = deleteUpcoming;
-window.saveTexts         = saveTexts;
-window.switchLegalTab    = switchLegalTab;
-window.saveLegal         = saveLegal;
-window.savePaymentLinks  = savePaymentLinks;
-window.exportSubscribers = exportSubscribers;
-window.saveSettings      = saveSettings;
-window.confirmResetData  = confirmResetData;
-window.exportBackup      = exportBackup;
-window.importBackup      = importBackup;
-window.closeModal        = closeModal;
-window.logout            = logout;
+/* ── Exposition globale ─────────────────────────────────────── */
+window.loadPanel                    = loadPanel;
+window.logout                       = logout;
+window.openAddProperty              = openAddProperty;
+window.editProperty                 = editProperty;
+window.saveProperty                 = saveProperty;
+window.deleteProperty               = deleteProperty;
+window.openAddUpcoming              = openAddUpcoming;
+window.editUpcoming                 = editUpcoming;
+window.saveUpcoming                 = saveUpcoming;
+window.deleteUpcoming               = deleteUpcoming;
+window.saveTexts                    = saveTexts;
+window.saveFooter                   = saveFooter;
+window.switchLegalTab               = _switchLegalTab;
+window.saveLegal                    = saveLegal;
+window.openAddFaq                   = openAddFaq;
+window.editFaq                      = editFaq;
+window.saveFaq                      = saveFaq;
+window.deleteFaq                    = deleteFaq;
+window.savePaymentLinks             = savePaymentLinks;
+window.exportSubscribers            = exportSubscribers;
+window.deleteSubscriber             = deleteSubscriber;
+window.confirmReservation           = confirmReservation;
+window.cancelReservation            = cancelReservation;
+window.loadAvailabilityForProperty  = loadAvailabilityForProperty;
+window.blockDate                    = blockDate;
+window.unblockDate                  = unblockDate;
+window.exportBackup                 = exportBackup;
+window.closeModal                   = _closeModal;

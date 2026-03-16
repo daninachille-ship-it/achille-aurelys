@@ -784,16 +784,23 @@ function _onDatesSelected(checkIn, checkOut, calculator, property) {
 }
 
 /**
- * Sauvegarde la reservation dans AureStorage.
+ * Sauvegarde la reservation dans Supabase via AureDB.
+ * Fallback localStorage si Supabase non configure.
  */
 function _saveReservation(reservation) {
-  try {
-    const data = window.AureStorage.getData();
-    if (!Array.isArray(data.reservations)) data.reservations = [];
-    data.reservations.push(reservation);
-    window.AureStorage.saveData(data);
-  } catch (e) {
-    console.error('[AureBooking] Failed to save reservation:', e);
+  if (window.AureDB && window.AureDB.isConfigured()) {
+    window.AureDB.createReservation(reservation).catch(e => {
+      console.error('[AureBooking] Erreur sauvegarde Supabase:', e);
+    });
+  } else {
+    try {
+      const key  = 'aurelys_reservations_local';
+      const list = JSON.parse(localStorage.getItem(key) || '[]');
+      list.push(reservation);
+      localStorage.setItem(key, JSON.stringify(list));
+    } catch (e) {
+      console.error('[AureBooking] Erreur sauvegarde locale:', e);
+    }
   }
 }
 
@@ -920,23 +927,21 @@ function _escapeAttr(str) {
  * @param {string} checkOut - YYYY-MM-DD
  */
 function blockDatesAfterPayment(propertyId, checkIn, checkOut) {
-  if (!window.AureStorage) return;
   if (!propertyId || !checkIn || !checkOut) return;
 
+  if (window.AureDB && window.AureDB.isConfigured()) {
+    // Les dates sont bloquees automatiquement par AureDB.createReservation
+    return;
+  }
+
+  // Fallback : mettre a jour le cache local
   try {
-    const data = window.AureStorage.getData();
-    const prop = data.properties.find(p => p.id === propertyId);
-    if (!prop) {
-      console.warn(`[AureBooking] blockDatesAfterPayment: property not found: ${propertyId}`);
-      return;
-    }
-
+    if (!window._aureBlockedDates) window._aureBlockedDates = {};
+    if (!window._aureBlockedDates[propertyId]) window._aureBlockedDates[propertyId] = [];
     const newDates = _expandDateRange(checkIn, checkOut);
-    const existing = new Set(prop.blockedDates || []);
+    const existing = new Set(window._aureBlockedDates[propertyId]);
     newDates.forEach(d => existing.add(d));
-    prop.blockedDates = Array.from(existing).sort();
-
-    window.AureStorage.saveData(data);
+    window._aureBlockedDates[propertyId] = Array.from(existing).sort();
   } catch (e) {
     console.error('[AureBooking] blockDatesAfterPayment error:', e);
   }

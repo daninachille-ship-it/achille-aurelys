@@ -1,4 +1,4 @@
-# netlify.toml — Configuration Netlify pour Achille & Aurelys
+# netlify.toml — Configuration Netlify pour AURELYS
 
 [build]
   publish = "."

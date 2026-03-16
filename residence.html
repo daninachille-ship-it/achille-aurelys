@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>AURELYS — Résidence</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
+  <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="css/residence.css">
+</head>
+<body class="page-residence">
+
+<!-- ── Navigation ──────────────────────────────────────────── -->
+<header class="nav" role="banner">
+  <div class="container nav-inner">
+    <a href="index.html" class="nav-logo" aria-label="Accueil AURELYS">
+      <span>AURELYS</span>
+    </a>
+    <nav aria-label="Navigation principale">
+      <ul class="nav-links">
+        <li><a href="index.html#logements">Résidences</a></li>
+        <li><a href="index.html#carte">Carte</a></li>
+        <li><a href="index.html#a-propos">À propos</a></li>
+        <li><a href="index.html#contact">Contact</a></li>
+        <li><a href="index.html#logements" class="nav-cta">Réserver</a></li>
+      </ul>
+    </nav>
+    <button class="nav-burger" aria-label="Menu" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </div>
+  <nav class="nav-mobile" aria-label="Navigation mobile">
+    <a href="index.html#logements">Résidences</a>
+    <a href="index.html#carte">Carte</a>
+    <a href="index.html#a-propos">À propos</a>
+    <a href="index.html#contact">Contact</a>
+  </nav>
+</header>
+
+<!-- ── Contenu principal ────────────────────────────────────── -->
+<main id="res-main">
+
+  <!-- Barre retour -->
+  <div class="res-back-bar">
+    <a href="index.html" class="res-back-btn">
+      <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+        <path d="M9 2L4 7l5 5"/>
+      </svg>
+      Toutes les résidences
+    </a>
+    <p class="res-back-breadcrumb" id="res-breadcrumb"></p>
+  </div>
+
+  <!-- ── Galerie photos ──────────────────────────────────────── -->
+  <section class="res-gallery-section" aria-label="Photos du logement">
+    <div class="res-gallery-layout" id="res-gallery-layout">
+      <!-- Photo principale -->
+      <div class="res-gallery-main">
+        <img
+          class="res-gallery-cover"
+          id="res-gallery-cover"
+          src=""
+          alt=""
+          loading="eager"
+        >
+        <button class="res-gallery-all-btn" id="res-gallery-all-btn" type="button" aria-label="Voir toutes les photos">
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <rect x="1" y="1" width="5" height="5" rx="1"/><rect x="8" y="1" width="5" height="5" rx="1"/>
+            <rect x="1" y="8" width="5" height="5" rx="1"/><rect x="8" y="8" width="5" height="5" rx="1"/>
+          </svg>
+          Voir les photos
+        </button>
+      </div>
+
+      <!-- Grille secondaire (4 vignettes) -->
+      <div class="res-gallery-grid" id="res-gallery-grid" aria-label="Galerie photos">
+        <!-- Alimenté par residence.js -->
+      </div>
+    </div>
+
+    <!-- Strip mobile -->
+    <div class="res-gallery-strip" id="res-gallery-strip" role="list" aria-label="Vignettes photos">
+      <!-- Alimenté par residence.js -->
+    </div>
+  </section>
+
+  <!-- ── Contenu + Sidebar ───────────────────────────────────── -->
+  <div class="container res-layout">
+
+    <!-- Colonne principale -->
+    <article class="res-content">
+
+      <!-- En-tête -->
+      <header class="res-header">
+        <p class="res-location" id="res-location"></p>
+        <h1 class="res-title" id="res-title">—</h1>
+        <p class="res-subtitle" id="res-subtitle"></p>
+
+        <div class="res-capacity-row" id="res-capacity" role="list">
+          <!-- voyageurs, chambres, lits, sdb -->
+        </div>
+      </header>
+
+      <hr class="res-divider">
+
+      <!-- Description -->
+      <section class="res-section" aria-labelledby="res-desc-label">
+        <h2 class="res-section-title" id="res-desc-label">Description</h2>
+        <p class="res-description" id="res-description"></p>
+      </section>
+
+      <hr class="res-divider">
+
+      <!-- Équipements -->
+      <section class="res-section" id="res-amenities-section" aria-labelledby="res-amenities-label">
+        <h2 class="res-section-title" id="res-amenities-label">Équipements</h2>
+        <ul class="res-amenities-grid" id="res-amenities"></ul>
+      </section>
+
+      <hr class="res-divider">
+
+      <!-- Règles -->
+      <section class="res-section" id="res-rules-section" aria-labelledby="res-rules-label">
+        <h2 class="res-section-title" id="res-rules-label">Règles du séjour</h2>
+        <ul class="res-rules-list" id="res-rules"></ul>
+      </section>
+
+      <hr class="res-divider">
+
+      <!-- Arrivée / Départ -->
+      <section class="res-section" aria-labelledby="res-checkin-label">
+        <h2 class="res-section-title" id="res-checkin-label">Arrivée &amp; Départ</h2>
+        <div class="res-checkinout-row" id="res-checkinout"></div>
+      </section>
+
+      <hr class="res-divider">
+
+      <!-- Carte -->
+      <section class="res-section" id="res-map-section" aria-labelledby="res-map-label">
+        <h2 class="res-section-title" id="res-map-label">Localisation</h2>
+        <p class="res-map-address" id="res-map-address"></p>
+        <div id="res-map" class="res-map-container" role="application" aria-label="Carte de localisation"></div>
+      </section>
+
+    </article>
+
+    <!-- Sidebar sticky -->
+    <aside class="res-sidebar" aria-label="Réservation">
+      <div class="res-booking-card">
+        <div class="res-price-row">
+          <span class="res-price-amount" id="res-price">—</span>
+          <span class="res-price-unit">/ nuit</span>
+        </div>
+        <p class="res-price-extra" id="res-price-extra"></p>
+
+        <a class="res-book-btn" id="res-book-btn" href="#">
+          Réserver ce logement
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+            <path d="M1 7h12M8 2l5 5-5 5"/>
+          </svg>
+        </a>
+
+        <div class="res-booking-note" id="res-booking-note"></div>
+
+        <hr class="res-card-divider">
+
+        <div class="res-badges" id="res-badges"></div>
+      </div>
+    </aside>
+
+  </div><!-- fin res-layout -->
+
+</main>
+
+<!-- ── Lightbox ─────────────────────────────────────────────── -->
+<div id="res-lightbox" class="res-lightbox" role="dialog" aria-modal="true" aria-label="Visionneuse photos" hidden>
+  <div class="res-lightbox-backdrop" id="res-lb-backdrop"></div>
+
+  <button class="res-lightbox-close" id="res-lb-close" aria-label="Fermer">
+    <svg width="18" height="18" viewBox="0 0 18 18" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+      <path d="M2 2l14 14M16 2L2 16"/>
+    </svg>
+  </button>
+
+  <button class="res-lightbox-nav res-lb-prev" id="res-lb-prev" aria-label="Photo précédente">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+      <path d="M13 4l-6 6 6 6"/>
+    </svg>
+  </button>
+
+  <div class="res-lightbox-img-wrap">
+    <img class="res-lightbox-img" id="res-lb-img" src="" alt="">
+  </div>
+
+  <button class="res-lightbox-nav res-lb-next" id="res-lb-next" aria-label="Photo suivante">
+    <svg width="20" height="20" viewBox="0 0 20 20" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true">
+      <path d="M7 4l6 6-6 6"/>
+    </svg>
+  </button>
+
+  <p class="res-lightbox-counter" id="res-lb-counter" aria-live="polite"></p>
+</div>
+
+<!-- ── Footer minimal ───────────────────────────────────────── -->
+<footer class="footer">
+  <div class="container footer-inner">
+    <div class="footer-bottom">
+      <p class="footer-copy">
+        &copy; <span id="footer-year"></span> AURELYS. Tous droits réservés.
+      </p>
+      <nav class="footer-legal" aria-label="Liens légaux">
+        <a href="legal.html?page=cgv">CGV</a>
+        <a href="legal.html?page=privacy">Confidentialité</a>
+        <a href="legal.html?page=mentions">Mentions légales</a>
+      </nav>
+    </div>
+  </div>
+</footer>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js" crossorigin=""></script>
+<script src="js/storage.js"></script>
+<script src="js/residence.js"></script>
+<script>document.getElementById('footer-year').textContent = new Date().getFullYear();</script>
+
+</body>
+</html>

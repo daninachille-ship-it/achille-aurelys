@@ -1037,6 +1037,85 @@ code { font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 0.85e
   outline-offset: 2px;
 }
 
+/* ── Page loader ────────────────────────────────────────────── */
+.page-loader {
+  position: fixed;
+  inset: 0;
+  background: var(--bg);
+  z-index: 10000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.4s ease;
+}
+.page-loader.fade-out { opacity: 0; pointer-events: none; }
+
+/* ── Supabase config banner ──────────────────────────────────── */
+.config-banner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 14px 18px;
+  background: rgba(201,186,168,0.06);
+  border: 1px solid rgba(201,186,168,0.15);
+  border-radius: var(--radius);
+  font-size: 13px;
+  color: var(--text-muted);
+  margin-bottom: 20px;
+}
+.config-banner a { color: var(--sand); text-decoration: underline; }
+.config-banner-icon { flex-shrink: 0; width: 18px; height: 18px; color: var(--sand); }
+
+/* ── Field mono (JSON editor) ──────────────────────────────── */
+.field-mono {
+  font-family: 'SFMono-Regular', 'Consolas', 'Liberation Mono', monospace;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+/* ── Badge status ───────────────────────────────────────────── */
+.badge-pending  { background: rgba(180,120,40,0.15); color: #c99440; }
+.badge-confirmed { background: rgba(80,160,80,0.15); color: #60b060; }
+.badge-cancelled { background: rgba(160,60,60,0.15); color: #c06060; }
+
+/* ── Availability / blocked dates ──────────────────────────── */
+.blocked-dates-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 12px;
+}
+.blocked-date-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 4px 10px;
+  background: rgba(160,60,60,0.1);
+  border: 1px solid rgba(160,60,60,0.2);
+  border-radius: 4px;
+  font-size: 12px;
+  color: var(--text-muted);
+}
+.blocked-date-item button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  color: var(--danger);
+  font-size: 14px;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+/* ── Small button variant ──────────────────────────────────── */
+.btn-xs {
+  padding: 4px 10px;
+  font-size: 11px;
+  border-radius: 4px;
+}
+
+/* ── Small modal variant ──────────────────────────────────── */
+.admin-modal--sm { max-width: 540px; }
+
 /* ── Responsive ─────────────────────────────────────────────── */
 @media (max-width: 1024px) {
   .stats-grid { grid-template-columns: repeat(2, 1fr); }

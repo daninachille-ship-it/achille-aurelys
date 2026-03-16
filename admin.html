@@ -23,6 +23,19 @@
 
     <form id="login-form" novalidate>
       <div class="login-field">
+        <label class="login-label" for="admin-email">Email</label>
+        <input
+          class="login-input"
+          id="admin-email"
+          type="email"
+          name="email"
+          placeholder="admin@aurelys.fr"
+          required
+          autocomplete="username"
+          autofocus
+        >
+      </div>
+      <div class="login-field">
         <label class="login-label" for="admin-password">Mot de passe</label>
         <input
           class="login-input"
@@ -32,11 +45,10 @@
           placeholder="••••••••"
           required
           autocomplete="current-password"
-          autofocus
         >
       </div>
-      <button type="submit" class="login-btn">Accéder</button>
-      <p class="login-error" id="login-error" role="alert">Mot de passe incorrect.</p>
+      <button type="submit" id="login-btn" class="login-btn">Accéder</button>
+      <p class="login-error" id="login-error" role="alert"></p>
     </form>
   </div>
 </div>
@@ -79,9 +91,19 @@
         Textes du site
       </button>
 
+      <button class="nav-item" data-panel="footer" onclick="loadPanel('footer')">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><path d="M1 10h14"/><path d="M3 12h3"/><path d="M7 12h2"/><path d="M11 12h2"/><path d="M3 4h10"/><path d="M3 7h8"/></svg>
+        Footer &amp; Liens
+      </button>
+
       <button class="nav-item" data-panel="legal" onclick="loadPanel('legal')">
         <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="2" y="1" width="12" height="14" rx="1.5"/><path d="M5 5h6"/><path d="M5 8h6"/><path d="M5 11h3"/></svg>
         Pages légales
+      </button>
+
+      <button class="nav-item" data-panel="faq" onclick="loadPanel('faq')">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><circle cx="8" cy="8" r="7"/><path d="M8 10v1"/><path d="M8 5c0-1.1.9-2 2-2 0 2-2 2-2 4"/></svg>
+        FAQ
       </button>
 
       <button class="nav-item" data-panel="payment" onclick="loadPanel('payment')">
@@ -102,6 +124,11 @@
         Réservations
       </button>
 
+      <button class="nav-item" data-panel="availability" onclick="loadPanel('availability')">
+        <svg class="nav-icon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.5" aria-hidden="true"><rect x="1" y="3" width="14" height="12" rx="1.5"/><path d="M1 7h14"/><path d="M5 1v4"/><path d="M11 1v4"/><path d="M6 11l2-2 3 3"/></svg>
+        Disponibilité
+      </button>
+
       <div class="nav-separator" role="separator"></div>
 
       <button class="nav-item" data-panel="settings" onclick="loadPanel('settings')">
@@ -119,9 +146,9 @@
         <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" width="13" height="13" aria-hidden="true"><path d="M7 1v9M4 8l3 3 3-3"/><path d="M2 11v1.5a.5.5 0 00.5.5h9a.5.5 0 00.5-.5V11"/></svg>
         Sauvegarder
       </button>
-      <button class="sidebar-footer-btn" onclick="importBackup()">
-        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" width="13" height="13" aria-hidden="true"><path d="M7 10V1M4 4l3-3 3 3"/><path d="M2 11v1.5a.5.5 0 00.5.5h9a.5.5 0 00.5-.5V11"/></svg>
-        Importer
+      <button class="sidebar-footer-btn" onclick="exportBackup()">
+        <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" width="13" height="13" aria-hidden="true"><path d="M7 1v9M4 8l3 3 3-3"/><path d="M2 11v1.5a.5.5 0 00.5.5h9a.5.5 0 00.5-.5V11"/></svg>
+        Backup JSON
       </button>
       <button class="sidebar-footer-btn danger" onclick="logout()">
         <svg viewBox="0 0 14 14" fill="none" stroke="currentColor" stroke-width="1.5" width="13" height="13" aria-hidden="true"><path d="M5 7h8M10 4.5l2.5 2.5L10 9.5"/><path d="M7 2H2.5A.5.5 0 002 2.5v9a.5.5 0 00.5.5H7"/></svg>
@@ -175,15 +202,26 @@
           </div>
         </div>
 
+        <!-- Bannière si Supabase non configuré -->
+        <div id="supabase-config-banner" class="config-banner" style="display:none;">
+          <strong>Supabase non configuré.</strong>
+          Remplissez <code>js/config.js</code> avec votre URL et clé anon Supabase pour activer la persistance partagée.
+          <a href="https://supabase.com" target="_blank" rel="noopener">Créer un projet Supabase</a>
+        </div>
+
         <div class="card">
           <div class="card-header">
             <p class="card-title">Accès rapides</p>
           </div>
           <div style="display:flex; flex-wrap:wrap; gap:10px;">
-            <button class="btn btn-primary" onclick="loadPanel('properties')">Gérer les logements</button>
-            <button class="btn btn-secondary" onclick="loadPanel('texts')">Modifier les textes</button>
+            <button class="btn btn-primary" onclick="loadPanel('properties')">Logements</button>
+            <button class="btn btn-secondary" onclick="loadPanel('texts')">Textes du site</button>
+            <button class="btn btn-secondary" onclick="loadPanel('footer')">Footer</button>
             <button class="btn btn-secondary" onclick="loadPanel('legal')">Pages légales</button>
-            <button class="btn btn-secondary" onclick="loadPanel('newsletter')">Voir les abonnés</button>
+            <button class="btn btn-secondary" onclick="loadPanel('faq')">FAQ</button>
+            <button class="btn btn-secondary" onclick="loadPanel('newsletter')">Newsletter</button>
+            <button class="btn btn-secondary" onclick="loadPanel('reservations')">Réservations</button>
+            <button class="btn btn-secondary" onclick="loadPanel('availability')">Disponibilité</button>
           </div>
         </div>
       </div>
@@ -232,11 +270,7 @@
             <p class="form-section-title">Identité</p>
             <div class="field-row">
               <div class="field">
-                <label class="field-label field-required" for="text-site-name">Nom du site</label>
-                <input class="field-input" id="text-site-name" type="text" placeholder="AURELYS">
-              </div>
-              <div class="field">
-                <label class="field-label" for="text-tagline">Tagline</label>
+                <label class="field-label" for="text-tagline">Tagline (sous le logo)</label>
                 <input class="field-input" id="text-tagline" type="text" placeholder="Intemporel par choix.">
               </div>
             </div>
@@ -443,6 +477,92 @@
         </div>
       </div>
 
+      <!-- ══ FOOTER ════════════════════════════════════════ -->
+      <div id="panel-footer" class="admin-panel">
+        <div class="card">
+          <div class="card-header">
+            <p class="card-title">Footer &amp; Liens</p>
+            <button class="btn btn-primary" onclick="saveFooter()">Sauvegarder</button>
+          </div>
+          <p class="panel-hint">Modifiez la description, le copyright et les colonnes de liens du footer.</p>
+          <div class="form-section">
+            <p class="form-section-title">Description</p>
+            <div class="field">
+              <textarea class="field-textarea" id="footer-description" rows="2" placeholder="Collection de résidences d'exception..."></textarea>
+            </div>
+          </div>
+          <div class="form-section">
+            <p class="form-section-title">Copyright</p>
+            <div class="field">
+              <input class="field-input" id="footer-copyright" type="text" placeholder="© {year} AURELYS. Tous droits réservés.">
+              <p class="field-hint">Utilisez {year} pour l'année automatique.</p>
+            </div>
+          </div>
+          <div class="form-section">
+            <p class="form-section-title">Colonnes de liens (JSON)</p>
+            <div class="field">
+              <textarea class="field-textarea field-mono" id="footer-cols-editor" rows="12"
+                placeholder='[{"title":"Résidences","links":[{"label":"Toutes","href":"#residences"}]}]'></textarea>
+              <p class="field-hint">Format JSON : tableau de colonnes avec title et links (label + href).</p>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- ══ FAQ ═══════════════════════════════════════════ -->
+      <div id="panel-faq" class="admin-panel">
+        <div class="card">
+          <div class="card-header">
+            <p class="card-title">Foire aux questions</p>
+            <button class="btn btn-primary" onclick="openAddFaq()">+ Ajouter</button>
+          </div>
+          <p class="panel-hint">Les questions sont affichées sur la page d'accueil dans l'ordre configuré.</p>
+          <div class="prop-list" id="faq-list-admin" aria-live="polite"></div>
+        </div>
+      </div>
+
+      <!-- ══ DISPONIBILITE ═════════════════════════════════ -->
+      <div id="panel-availability" class="admin-panel">
+        <div class="card">
+          <div class="card-header">
+            <p class="card-title">Gestion de la disponibilité</p>
+          </div>
+          <p class="panel-hint">Bloquez des dates pour empêcher les réservations sur une période donnée.</p>
+
+          <div class="form-section">
+            <p class="form-section-title">Sélectionner un logement</p>
+            <div class="field">
+              <select class="field-select" id="avail-property-select"
+                onchange="loadAvailabilityForProperty(this.value)">
+                <option value="">Sélectionner un logement</option>
+              </select>
+            </div>
+          </div>
+
+          <div class="form-section">
+            <p class="form-section-title">Bloquer une date</p>
+            <div class="field-row">
+              <div class="field">
+                <label class="field-label" for="avail-date-input">Date (AAAA-MM-JJ)</label>
+                <input class="field-input" id="avail-date-input" type="date">
+              </div>
+              <div class="field">
+                <label class="field-label" for="avail-note-input">Note (optionnel)</label>
+                <input class="field-input" id="avail-note-input" type="text" placeholder="Entretien, réservation directe…">
+              </div>
+            </div>
+            <button class="btn btn-primary" onclick="blockDate()">Bloquer cette date</button>
+          </div>
+
+          <div class="form-section">
+            <p class="form-section-title">Dates bloquées</p>
+            <div id="blocked-dates-list" style="font-size:13px; color:var(--text-muted);">
+              Sélectionnez un logement pour voir ses dates bloquées.
+            </div>
+          </div>
+        </div>
+      </div>
+
       <!-- ══ PARAMÈTRES ════════════════════════════════════ -->
       <div id="panel-settings" class="admin-panel">
         <div class="card">
@@ -450,30 +570,23 @@
             <p class="card-title">Paramètres</p>
           </div>
 
-          <div style="max-width:480px;">
-            <div class="field">
-              <label class="field-label field-required" for="settings-password">Mot de passe administration</label>
-              <input class="field-input" id="settings-password" type="text" placeholder="••••••••">
-              <p class="field-hint">Minimum 6 caractères. Notez-le soigneusement.</p>
-            </div>
-
-            <button class="btn btn-primary" onclick="saveSettings()" style="margin-bottom:32px;">
-              Sauvegarder le mot de passe
-            </button>
+          <div class="form-section">
+            <p class="form-section-title">Statut Supabase</p>
+            <p id="settings-supabase-status" style="font-size:13px; margin-bottom:16px;">Vérification...</p>
+            <p style="font-size:12px; color:var(--text-muted); margin-bottom:16px;">
+              Pour configurer Supabase, modifiez <code>js/config.js</code> avec votre URL et clé anon.
+              Ensuite exécutez <code>supabase/schema.sql</code> puis <code>supabase/seed.sql</code> dans l'éditeur SQL Supabase.
+            </p>
           </div>
 
           <hr class="section-divider">
 
-          <div class="card danger-zone">
-            <div class="card-header" style="margin-bottom:16px; padding-bottom:16px;">
-              <p class="card-title" style="color:var(--danger);">Zone dangereuse</p>
-            </div>
+          <div class="form-section">
+            <p class="form-section-title">Sauvegarde</p>
             <p style="font-size:13px; color:var(--text-muted); margin-bottom:16px;">
-              Réinitialiser toutes les données aux valeurs par défaut. Cette action est <strong>irréversible</strong>.
+              Exportez toutes vos données en JSON pour une sauvegarde locale.
             </p>
-            <button class="btn btn-danger" onclick="confirmResetData()">
-              Réinitialiser toutes les données
-            </button>
+            <button class="btn btn-secondary" onclick="exportBackup()">Télécharger le backup JSON</button>
           </div>
         </div>
       </div>
@@ -509,6 +622,29 @@
         <div class="field">
           <label class="field-label" for="prop-description">Description complète</label>
           <textarea class="field-textarea" id="prop-description" rows="4" placeholder="Description détaillée du logement…"></textarea>
+        </div>
+        <div class="field">
+          <label class="field-label" for="prop-short-desc">Description courte (carte / aperçu)</label>
+          <input class="field-input" id="prop-short-desc" type="text" placeholder="Villa d'exception face à la baie de Guanabara">
+          <p class="field-hint">Texte affiché sous le titre sur les cartes et résumés.</p>
+        </div>
+        <div class="field">
+          <label class="field-label" for="prop-badges">Badges (un par ligne)</label>
+          <textarea class="field-textarea" id="prop-badges" rows="2" placeholder="Vue mer&#10;Piscine privée&#10;Coup de coeur"></textarea>
+          <p class="field-hint">Étiquettes affichées sur la carte du logement.</p>
+        </div>
+      </div>
+
+      <!-- Section SEO -->
+      <div class="modal-section">
+        <p class="modal-section-title">SEO</p>
+        <div class="field">
+          <label class="field-label" for="prop-seo-title">Titre SEO (balise &lt;title&gt;)</label>
+          <input class="field-input" id="prop-seo-title" type="text" placeholder="Villa Rio de Janeiro — AURELYS Luxury Rentals">
+        </div>
+        <div class="field">
+          <label class="field-label" for="prop-seo-desc">Description SEO (meta description)</label>
+          <textarea class="field-textarea" id="prop-seo-desc" rows="2" placeholder="Location villa de luxe à Rio de Janeiro…"></textarea>
         </div>
       </div>
 
@@ -761,7 +897,46 @@
   </div>
 </div>
 
+<!-- ════════════════════════════════════════════════════════════
+     MODAL : Ajouter / Modifier une FAQ
+════════════════════════════════════════════════════════════════ -->
+<div id="faq-modal" class="admin-modal-overlay" role="dialog" aria-modal="true" aria-labelledby="faq-modal-title">
+  <div class="admin-modal admin-modal--sm">
+    <div class="admin-modal-header">
+      <h3 class="admin-modal-title" id="faq-modal-title">Question fréquente</h3>
+      <button class="admin-modal-close" onclick="closeModal('faq-modal')" aria-label="Fermer">&times;</button>
+    </div>
+    <div class="admin-modal-body">
+      <input type="hidden" id="faq-id">
+      <div class="field">
+        <label class="field-label field-required" for="faq-question">Question</label>
+        <input class="field-input" id="faq-question" type="text" placeholder="Quelle est votre politique d'annulation ?">
+      </div>
+      <div class="field">
+        <label class="field-label field-required" for="faq-answer">Réponse</label>
+        <textarea class="field-textarea" id="faq-answer" rows="4" placeholder="Réponse complète à la question…"></textarea>
+      </div>
+      <div class="field">
+        <label class="field-label" for="faq-category">Catégorie</label>
+        <input class="field-input" id="faq-category" type="text" placeholder="Réservation">
+        <p class="field-hint">Optionnel — permet de regrouper les questions.</p>
+      </div>
+      <div class="field">
+        <label class="field-label" for="faq-order">Ordre d'affichage</label>
+        <input class="field-input" id="faq-order" type="number" min="0" placeholder="0">
+      </div>
+    </div>
+    <div class="admin-modal-footer">
+      <button class="btn btn-secondary" onclick="closeModal('faq-modal')">Annuler</button>
+      <button class="btn btn-primary" onclick="saveFaqItem()">Sauvegarder</button>
+    </div>
+  </div>
+</div>
+
 <!-- ── Scripts ──────────────────────────────────────────────── -->
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/config.js"></script>
+<script src="js/db.js"></script>
 <script src="js/storage.js"></script>
 <script src="js/admin.js"></script>
 

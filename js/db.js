@@ -149,14 +149,15 @@ const AureDB = (() => {
     const row = _toRow.property(prop);
     row.updated_at = new Date().toISOString();
 
-    const { data, error } = await client
+    /* Upsert sans .single() pour éviter PGRST116 si RLS filtre la réponse */
+    const { error } = await client
       .from('properties')
-      .upsert(row, { onConflict: 'id' })
-      .select()
-      .single();
+      .upsert(row, { onConflict: 'id' });
 
     if (error) throw error;
-    return _fromRow.property(data);
+
+    /* Relire la propriété mise à jour pour confirmer la sauvegarde */
+    return await getPropertyById(prop.id);
   }
 
   async function deleteProperty(id) {

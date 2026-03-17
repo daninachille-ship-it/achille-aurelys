@@ -10,7 +10,7 @@
  *   BREVO_API_KEY        — clé API Brevo, gratuit sur brevo.com (300 emails/jour)
  *   SUPABASE_URL         — URL de votre projet Supabase
  *   SUPABASE_SERVICE_KEY — clé service_role Supabase (Supabase → Settings → API)
- *   SITE_URL             — URL publique du site (ex: https://aurelys.netlify.app)
+ *   SITE_URL             — URL publique du site (ex: https://aurelyscollection.com)
  *   FROM_EMAIL           — adresse expéditrice (votre Gmail ou toute adresse)
  *   FROM_NAME            — nom affiché (ex: AURELYS)
  */
@@ -28,7 +28,7 @@ exports.handler = async (event) => {
   const BREVO_KEY  = process.env.BREVO_API_KEY;
   const SUPA_URL   = process.env.SUPABASE_URL;
   const SUPA_KEY   = process.env.SUPABASE_SERVICE_KEY;
-  const SITE_URL   = (process.env.SITE_URL || 'https://aurelys.netlify.app').replace(/\/$/, '');
+  const SITE_URL   = (process.env.SITE_URL || 'https://aurelyscollection.com').replace(/\/$/, '');
   const FROM_EMAIL = process.env.FROM_EMAIL || 'votre@gmail.com';
   const FROM_NAME  = process.env.FROM_NAME  || 'AURELYS';
 

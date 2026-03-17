@@ -576,7 +576,7 @@ function initContactForm(formspreeId) {
         throw new Error('Erreur serveur');
       }
     } catch {
-      const fallbackEmail = document.querySelector('[data-text="contactEmail"]')?.textContent || 'contact@aurelys.fr';
+      const fallbackEmail = document.querySelector('[data-text="contactEmail"]')?.textContent || 'contact@aurelyscollection.com';
       showToast(`Erreur. Contactez-nous directement \u00e0 ${fallbackEmail}`, 'error');
     } finally {
       if (submitBtn) submitBtn.classList.remove('loading');

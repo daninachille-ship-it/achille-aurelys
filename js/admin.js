@@ -215,6 +215,10 @@ function _propItemHTML(p) {
         </div>
       </div>
       <div class="prop-item-actions">
+        <button class="btn btn-sm ${p.available ? 'btn-success' : 'btn-warning'}" onclick="togglePropertyAvailable('${p.id}')" title="${p.available ? 'Désactiver' : 'Activer'}">
+          ${p.available ? '✓ En ligne' : '○ Hors ligne'}
+        </button>
+        <button class="btn btn-outline btn-sm" onclick="demoteToUpcoming('${p.id}')" title="Passer en logement à venir">→ À venir</button>
         <button class="btn btn-secondary btn-sm" onclick="editProperty('${p.id}')">Modifier</button>
         <button class="btn btn-danger btn-sm" onclick="deleteProperty('${p.id}')">Supprimer</button>
       </div>
@@ -334,6 +338,82 @@ async function saveProperty() {
   }
 }
 
+/* Bascule rapide disponible ↔ indisponible sans ouvrir la modale */
+async function togglePropertyAvailable(id) {
+  const p = _properties.find(x => x.id === id);
+  if (!p) return;
+  try {
+    await AureDB.upsertProperty({ ...p, available: !p.available });
+    await _refreshPanel('properties');
+    showToast(p.available ? 'Logement mis hors ligne.' : 'Logement mis en ligne.');
+  } catch (err) {
+    showToast('Erreur : ' + err.message, 'error');
+  }
+}
+
+/* Convertit un logement disponible en logement "à venir" */
+async function demoteToUpcoming(id) {
+  const p = _properties.find(x => x.id === id);
+  if (!p) return;
+  if (!confirm(`Passer "${p.title}" en logement à venir ? Il sera retiré des logements disponibles.`)) return;
+  try {
+    const upcomingItem = {
+      id:          AureDB.generateId('upcoming'),
+      slug:        AureDB.slugify(p.title),
+      title:       p.title,
+      subtitle:    p.subtitle || '',
+      description: p.description || '',
+      location:    p.location || {},
+      media:       p.media || {},
+      expectedDate: '',
+      order:       _upcoming.length
+    };
+    await AureDB.upsertUpcomingProperty(upcomingItem);
+    await AureDB.deleteProperty(id);
+    await _loadAllData();
+    if (_currentPanel === 'properties') await _refreshPanel('properties');
+    if (_currentPanel === 'upcoming')   await _refreshPanel('upcoming');
+    showToast(`"${p.title}" déplacé en logements à venir.`);
+  } catch (err) {
+    showToast('Erreur : ' + err.message, 'error');
+  }
+}
+
+/* Convertit un logement "à venir" en logement disponible */
+async function promoteToProperty(upcomingId) {
+  const u = _upcoming.find(x => x.id === upcomingId);
+  if (!u) return;
+  if (!confirm(`Mettre en ligne "${u.title}" comme logement disponible ?`)) return;
+  try {
+    const prop = {
+      id:               AureDB.generateId('prop'),
+      slug:             AureDB.slugify(u.title),
+      title:            u.title,
+      subtitle:         u.subtitle || '',
+      shortDescription: u.description || '',
+      description:      u.description || '',
+      location:         u.location || {},
+      media:            u.media || {},
+      pricing:          { perNight: 0, cleaningFee: 0, currency: 'EUR', minimumStay: 1 },
+      capacity:         { guests: 0, bedrooms: 0, beds: 0, bathrooms: 0 },
+      amenities: [], rules: [], badges: [],
+      checkIn: '15h00', checkOut: '11h00',
+      available: true, featured: false,
+      paymentLink: '', contactEmail: '', formspreeId: '',
+      seo: { title: u.title + ' \u2014 AURELYS', description: '' },
+      order: _properties.length
+    };
+    await AureDB.upsertProperty(prop);
+    await AureDB.deleteUpcomingProperty(upcomingId);
+    await _loadAllData();
+    if (_currentPanel === 'upcoming')   await _refreshPanel('upcoming');
+    if (_currentPanel === 'properties') await _refreshPanel('properties');
+    showToast(`"${u.title}" mis en ligne ! Pensez à compléter le prix et les détails.`);
+  } catch (err) {
+    showToast('Erreur : ' + err.message, 'error');
+  }
+}
+
 async function deleteProperty(id) {
   if (!confirm('Supprimer ce logement d\u00e9finitivement\u00a0? Cette action est irr\u00e9versible.')) return;
   try {
@@ -376,6 +456,7 @@ function _renderUpcoming() {
         </div>
       </div>
       <div class="prop-item-actions">
+        <button class="btn btn-success btn-sm" onclick="promoteToProperty('${u.id}')" title="Publier comme logement disponible">↑ Mettre en ligne</button>
         <button class="btn btn-secondary btn-sm" onclick="editUpcoming('${u.id}')">Modifier</button>
         <button class="btn btn-danger btn-sm" onclick="deleteUpcoming('${u.id}')">Supprimer</button>
       </div>

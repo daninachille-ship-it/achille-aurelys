@@ -555,14 +555,14 @@ function initBookingModal(propertyId) {
         <button class="modal-close" id="booking-modal-close" type="button" aria-label="Fermer">&times;</button>
       </div>
 
-      <!-- Apercu du logement -->
-      <div class="modal-property-preview">
+      <!-- Apercu du logement (cliquable → fiche produit) -->
+      <a class="modal-property-preview" href="residence.html?id=${_escapeAttr(propertyId)}" title="Voir la fiche du logement" style="text-decoration:none;display:flex;align-items:center;gap:14px;cursor:pointer;">
         ${coverImg ? `<img class="modal-prop-img" src="${_escapeAttr(coverImg)}" alt="${_escapeAttr(property.title)}" loading="lazy">` : ''}
         <div class="modal-prop-info">
           <div class="modal-prop-name">${_escapeHtml(property.title)}</div>
           <div class="modal-prop-price">${priceStr} / nuit</div>
         </div>
-      </div>
+      </a>
 
       <!-- Etape 1 : Calendrier -->
       <div class="form-group" id="booking-calendar-section">

@@ -38,6 +38,26 @@
       return;
     }
 
+    /* Alimenter le cache global pour que booking.js puisse trouver la propriété */
+    window._aureProps = window._aureProps || {};
+    window._aureProps[_property.id] = _property;
+
+    /* Charger les dates bloquées pour le calendrier de réservation */
+    try {
+      const cfg = window.AURELYS_CONFIG || {};
+      const client = window.supabase
+        ? window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey)
+        : null;
+      if (client) {
+        const { data } = await client
+          .from('availability_blocks')
+          .select('date')
+          .eq('property_id', _property.id);
+        window._aureBlockedDates = window._aureBlockedDates || {};
+        window._aureBlockedDates[_property.id] = (data || []).map(r => r.date);
+      }
+    } catch (e) { /* silent */ }
+
     /* Titre SEO */
     document.title = `${_property.title} — AURELYS`;
 
@@ -144,18 +164,15 @@
     const extraEl = document.getElementById('res-price-extra');
     if (extraEl) extraEl.textContent = extraParts.join(' · ');
 
-    /* Bouton réserver */
+    /* Bouton réserver → ouvre la modale de réservation Stripe */
     const bookBtn = document.getElementById('res-book-btn');
     if (bookBtn) {
-      if (p.paymentLink) {
-        bookBtn.href   = p.paymentLink;
-        bookBtn.target = '_blank';
-        bookBtn.rel    = 'noopener noreferrer';
-      } else if (p.contactEmail) {
-        bookBtn.href = `mailto:${p.contactEmail}?subject=Demande%20de%20réservation%20—%20${encodeURIComponent(p.title)}`;
-      } else {
-        bookBtn.href = 'index.html#contact';
-      }
+      bookBtn.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (window.AureBooking && window.AureBooking.initBookingModal) {
+          window.AureBooking.initBookingModal(p.id);
+        }
+      });
     }
 
     /* Note réservation */

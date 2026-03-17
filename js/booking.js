@@ -726,8 +726,8 @@ function initBookingModal(propertyId) {
     /* Bloquer les dates immediatement */
     blockDatesAfterPayment(propertyId, calendar.checkIn, calendar.checkOut);
 
-    /* Confirmation : affichage ou redirection */
-    _showConfirmation(overlay, reservation, calculator);
+    /* Paiement dynamique via Stripe Checkout */
+    _redirectToStripeCheckout(overlay, reservation, calculator, totals);
   });
 
   /* ── 8. Ouvrir la modale ───────────────────────────────── */
@@ -801,6 +801,77 @@ function _saveReservation(reservation) {
     } catch (e) {
       console.error('[AureBooking] Erreur sauvegarde locale:', e);
     }
+  }
+}
+
+/**
+ * Appelle la Netlify Function create-checkout pour obtenir l'URL Stripe,
+ * puis redirige le visiteur. Affiche un écran de chargement pendant l'appel,
+ * et la confirmation classique si la function est indisponible.
+ */
+async function _redirectToStripeCheckout(overlay, reservation, calculator, totals) {
+  const card = document.getElementById('booking-modal-card');
+  if (!card) return;
+
+  /* Écran de chargement */
+  card.innerHTML = `
+    <div style="text-align:center;padding:40px 20px;">
+      <div class="booking-spinner" aria-label="Chargement..." style="
+        width:40px;height:40px;border-radius:50%;
+        border:2px solid var(--color-border);
+        border-top-color:var(--color-accent);
+        animation:aure-spin .8s linear infinite;
+        margin:0 auto 20px;
+      "></div>
+      <p style="color:var(--color-text-secondary);font-size:var(--text-sm);">
+        Préparation du paiement…
+      </p>
+    </div>
+  `;
+
+  /* S'assurer que le style d'animation existe */
+  if (!document.getElementById('aure-spin-style')) {
+    const style = document.createElement('style');
+    style.id = 'aure-spin-style';
+    style.textContent = '@keyframes aure-spin{to{transform:rotate(360deg)}}';
+    document.head.appendChild(style);
+  }
+
+  try {
+    const res = await fetch('/.netlify/functions/create-checkout', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        reservationId: reservation.id,
+        propertyTitle: reservation.propertyTitle,
+        pricing: {
+          subtotal:    totals.subtotal,
+          cleaningFee: totals.cleaningFee,
+          total:       totals.total,
+          currency:    totals.currency,
+          perNight:    totals.pricePerNight,
+          nights:      totals.nights,
+        },
+        guest: reservation.guest,
+        dates: reservation.dates,
+      }),
+    });
+
+    const data = await res.json();
+
+    if (res.ok && data.url) {
+      window.location.href = data.url;
+      return;
+    }
+
+    /* Erreur Stripe → fallback confirmation classique */
+    console.error('[AureBooking] Stripe checkout error:', data.error);
+    _showConfirmation(overlay, reservation, calculator);
+
+  } catch (err) {
+    /* Réseau indisponible ou function absente → fallback */
+    console.error('[AureBooking] create-checkout unreachable:', err.message);
+    _showConfirmation(overlay, reservation, calculator);
   }
 }
 

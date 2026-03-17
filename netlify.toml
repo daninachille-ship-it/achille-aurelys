@@ -2,6 +2,7 @@
 
 [build]
   publish = "."
+  functions = "netlify/functions"
 
 # Redirections pour les routes propres (sans .html)
 [[redirects]]

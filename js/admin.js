@@ -338,14 +338,33 @@ async function saveProperty() {
   }
 }
 
+/* ── Notifications newsletter ───────────────────────────────── */
+async function _notifySubscribers(type, property) {
+  try {
+    const res = await fetch('/.netlify/functions/notify-subscribers', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ type, property })
+    });
+    const data = await res.json();
+    if (data.sent > 0) {
+      showToast(`Email envoyé à ${data.sent} abonné${data.sent > 1 ? 's' : ''}.`, 'success');
+    }
+  } catch (e) {
+    console.warn('[AURELYS] Notification email échouée :', e.message);
+  }
+}
+
 /* Bascule rapide disponible ↔ indisponible sans ouvrir la modale */
 async function togglePropertyAvailable(id) {
   const p = _properties.find(x => x.id === id);
   if (!p) return;
+  const goingOnline = !p.available;
   try {
-    await AureDB.upsertProperty({ ...p, available: !p.available });
+    await AureDB.upsertProperty({ ...p, available: goingOnline });
     await _refreshPanel('properties');
-    showToast(p.available ? 'Logement mis hors ligne.' : 'Logement mis en ligne.');
+    showToast(goingOnline ? 'Logement mis en ligne.' : 'Logement mis hors ligne.');
+    if (goingOnline) _notifySubscribers('property_online', { ...p, available: true });
   } catch (err) {
     showToast('Erreur : ' + err.message, 'error');
   }
@@ -409,6 +428,7 @@ async function promoteToProperty(upcomingId) {
     if (_currentPanel === 'upcoming')   await _refreshPanel('upcoming');
     if (_currentPanel === 'properties') await _refreshPanel('properties');
     showToast(`"${u.title}" mis en ligne ! Pensez à compléter le prix et les détails.`);
+    _notifySubscribers('property_online', prop);
   } catch (err) {
     showToast('Erreur : ' + err.message, 'error');
   }
@@ -515,7 +535,9 @@ async function saveUpcoming() {
     await AureDB.upsertUpcomingProperty(item);
     _closeModal('upcoming-modal');
     await _refreshPanel('upcoming');
-    showToast(_editingUpcomId ? 'Logement \u00e0 venir mis \u00e0 jour.' : 'Logement \u00e0 venir ajout\u00e9.');
+    const isNew = !_editingUpcomId;
+    showToast(isNew ? 'Logement \u00e0 venir ajout\u00e9.' : 'Logement \u00e0 venir mis \u00e0 jour.');
+    if (isNew) _notifySubscribers('upcoming_added', item);
   } catch (err) {
     showToast('Erreur : ' + err.message, 'error');
   }

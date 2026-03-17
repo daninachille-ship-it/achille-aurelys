@@ -1,0 +1,242 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Réservation confirmée — AURELYS</title>
+  <meta name="robots" content="noindex, nofollow">
+  <link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:ital,wght@0,300;0,400;0,500;1,300;1,400&family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .conf-page {
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      padding: 60px 24px;
+      background: var(--color-bg);
+    }
+    .conf-card {
+      max-width: 560px;
+      width: 100%;
+      background: var(--color-surface);
+      border: 1px solid var(--color-border);
+      padding: 52px 48px;
+      text-align: center;
+    }
+    @media (max-width: 600px) {
+      .conf-card { padding: 36px 24px; }
+    }
+    .conf-icon {
+      width: 64px;
+      height: 64px;
+      border-radius: 50%;
+      background: var(--color-accent-dim, rgba(200,185,154,.12));
+      border: 1px solid var(--color-accent);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      margin: 0 auto 28px;
+      color: var(--color-accent);
+      font-size: 26px;
+    }
+    .conf-title {
+      font-family: 'Cormorant Garamond', Georgia, serif;
+      font-size: 2rem;
+      font-weight: 300;
+      color: var(--color-text-primary, #e8e4de);
+      margin: 0 0 12px;
+      letter-spacing: .02em;
+    }
+    .conf-subtitle {
+      color: var(--color-text-secondary);
+      font-size: var(--text-sm, .875rem);
+      line-height: 1.7;
+      margin: 0 0 36px;
+    }
+    .conf-summary {
+      background: var(--color-bg);
+      border: 1px solid var(--color-border);
+      padding: 24px 28px;
+      text-align: left;
+      margin-bottom: 32px;
+    }
+    .conf-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      gap: 16px;
+      padding: 8px 0;
+      font-size: var(--text-sm, .875rem);
+      border-bottom: 1px solid var(--color-border);
+    }
+    .conf-row:last-child { border-bottom: none; }
+    .conf-row-label { color: var(--color-text-secondary); }
+    .conf-row-value { color: var(--color-text-primary, #e8e4de); font-weight: 500; text-align: right; }
+    .conf-total .conf-row-label,
+    .conf-total .conf-row-value {
+      color: var(--color-accent);
+      font-weight: 600;
+    }
+    .conf-ref {
+      font-size: var(--text-xs, .75rem);
+      color: var(--color-text-dim);
+      margin-bottom: 28px;
+    }
+    .conf-actions {
+      display: flex;
+      gap: 12px;
+      justify-content: center;
+      flex-wrap: wrap;
+    }
+    .conf-loading {
+      color: var(--color-text-secondary);
+      font-size: var(--text-sm, .875rem);
+      padding: 20px 0;
+    }
+    .conf-spinner {
+      width: 32px; height: 32px;
+      border-radius: 50%;
+      border: 2px solid var(--color-border);
+      border-top-color: var(--color-accent);
+      animation: conf-spin .8s linear infinite;
+      margin: 0 auto 16px;
+    }
+    @keyframes conf-spin { to { transform: rotate(360deg); } }
+    .conf-error {
+      color: #e57373;
+      font-size: var(--text-sm, .875rem);
+      margin-bottom: 20px;
+    }
+    .conf-logo {
+      font-size: 11px;
+      letter-spacing: .25em;
+      color: var(--color-accent);
+      text-transform: uppercase;
+      font-weight: 500;
+      margin-bottom: 48px;
+      display: block;
+      text-decoration: none;
+    }
+  </style>
+</head>
+<body>
+
+<main class="conf-page">
+
+  <a href="index.html" class="conf-logo">AURELYS</a>
+
+  <div class="conf-card" id="conf-card">
+    <!-- Chargement initial -->
+    <div class="conf-loading" id="conf-loading">
+      <div class="conf-spinner"></div>
+      Confirmation en cours…
+    </div>
+  </div>
+
+</main>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/config.js"></script>
+<script src="js/db.js"></script>
+<script>
+(async function () {
+  const params    = new URLSearchParams(window.location.search);
+  const ref       = params.get('ref');
+  const sessionId = params.get('session_id');
+  const card      = document.getElementById('conf-card');
+
+  function _esc(s) {
+    return String(s ?? '').replace(/&/g,'&amp;').replace(/</g,'&lt;')
+      .replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+  }
+
+  function _showError(msg) {
+    card.innerHTML = `
+      <div class="conf-icon">&#9888;</div>
+      <h1 class="conf-title">Une erreur est survenue</h1>
+      <p class="conf-error">${_esc(msg)}</p>
+      <div class="conf-actions">
+        <a href="index.html" class="btn btn-primary">Retour à l'accueil</a>
+      </div>`;
+  }
+
+  if (!sessionId) {
+    _showError('Session de paiement introuvable.');
+    return;
+  }
+
+  /* Appel à la function de confirmation */
+  try {
+    const res = await fetch('/.netlify/functions/confirm-booking', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ sessionId, reservationId: ref }),
+    });
+
+    const data = await res.json();
+
+    if (!res.ok) {
+      _showError(data.error || 'Erreur lors de la confirmation.');
+      return;
+    }
+
+    /* Afficher la confirmation */
+    const b = data.booking || {};
+    const fmt = (n, cur) => new Intl.NumberFormat('fr-FR', {
+      style: 'currency', currency: cur || 'EUR', minimumFractionDigits: 0
+    }).format(n);
+
+    card.innerHTML = `
+      <div class="conf-icon">&#10003;</div>
+      <h1 class="conf-title">Réservation confirmée</h1>
+      <p class="conf-subtitle">
+        Votre paiement a bien été reçu. Un email de confirmation
+        vous a été envoyé à <strong>${_esc(b.guestEmail || '')}</strong>.
+      </p>
+
+      <div class="conf-summary">
+        ${b.propertyTitle ? `
+        <div class="conf-row">
+          <span class="conf-row-label">Logement</span>
+          <span class="conf-row-value">${_esc(b.propertyTitle)}</span>
+        </div>` : ''}
+        ${b.checkIn ? `
+        <div class="conf-row">
+          <span class="conf-row-label">Arrivée</span>
+          <span class="conf-row-value">${_esc(b.checkIn)}</span>
+        </div>` : ''}
+        ${b.checkOut ? `
+        <div class="conf-row">
+          <span class="conf-row-label">Départ</span>
+          <span class="conf-row-value">${_esc(b.checkOut)}</span>
+        </div>` : ''}
+        ${b.guestName ? `
+        <div class="conf-row">
+          <span class="conf-row-label">Voyageur</span>
+          <span class="conf-row-value">${_esc(b.guestName)}</span>
+        </div>` : ''}
+        ${b.total ? `
+        <div class="conf-row conf-total">
+          <span class="conf-row-label">Total payé</span>
+          <span class="conf-row-value">${fmt(b.total / 100, b.currency?.toUpperCase())}</span>
+        </div>` : ''}
+      </div>
+
+      ${ref ? `<p class="conf-ref">Référence : ${_esc(ref)}</p>` : ''}
+
+      <div class="conf-actions">
+        <a href="index.html" class="btn btn-primary">Retour à l'accueil</a>
+        <a href="index.html#logements" class="btn btn-outline">Voir d'autres résidences</a>
+      </div>
+    `;
+
+  } catch (err) {
+    _showError('Impossible de confirmer la réservation : ' + err.message);
+  }
+})();
+</script>
+
+</body>
+</html>

@@ -772,7 +772,7 @@ const AureDB = (() => {
           siteName:         'AURELYS',
           tagline:          'Intemporel par choix.',
           description:      "Collection de résidences d'exception. Hébergements courte durée.",
-          contactEmail:     'contact@aurelys.fr',
+          contactEmail:     'contact@aurelyscollection.com',
           contactPhone:     '+33 1 00 00 00 00',
           address:          'Paris, France',
           globalFormspreeId: '',

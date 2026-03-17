@@ -768,7 +768,7 @@ function _renderPaymentLinks() {
       </div>
       <div class="field" style="margin-bottom:0;">
         <label class="field-label">Email de contact pour ce logement</label>
-        <input class="field-input" type="email" placeholder="contact@aurelys.fr"
+        <input class="field-input" type="email" placeholder="contact@aurelyscollection.com"
           value="${_esc(p.contactEmail || '')}" id="pay-email-${p.id}">
       </div>
     </div>`).join('');

@@ -438,9 +438,9 @@ class BookingCalculator {
    */
   calcTotal(checkIn, checkOut) {
     const nights       = this.calcNights(checkIn, checkOut);
-    const pricePerNight = (this.property.pricing && this.property.pricing.perNight) || 0;
-    const cleaningFee  = (this.property.pricing && this.property.pricing.cleaningFee) || DEFAULT_CLEANING_FEE;
-    const currency     = (this.property.pricing && this.property.pricing.currency)   || DEFAULT_CURRENCY;
+    const pricePerNight = this.property.pricing?.perNight    ?? 0;
+    const cleaningFee  = this.property.pricing?.cleaningFee ?? DEFAULT_CLEANING_FEE;
+    const currency     = this.property.pricing?.currency    || DEFAULT_CURRENCY;
 
     const subtotal = nights * pricePerNight;
     const total    = subtotal + cleaningFee;
@@ -543,8 +543,8 @@ function initBookingModal(propertyId) {
   /* ── 3. Construire le contenu de la modale ─────────────── */
   const coverImg = (property.media && property.media.coverImage) || '';
   const priceStr = calculator.formatPrice(
-    property.pricing ? property.pricing.perNight : 0,
-    property.pricing ? property.pricing.currency : DEFAULT_CURRENCY
+    property.pricing?.perNight ?? 0,
+    property.pricing?.currency || DEFAULT_CURRENCY
   );
 
   overlay.innerHTML = `

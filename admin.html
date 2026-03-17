@@ -231,9 +231,10 @@
         <div class="card">
           <div class="card-header">
             <p class="card-title">Logements disponibles</p>
-            <button class="btn btn-primary" onclick="openAddProperty()">
-              + Ajouter
-            </button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn btn-outline btn-sm" onclick="openAddUpcoming()">+ À venir</button>
+              <button class="btn btn-primary" onclick="openAddProperty()">+ Disponible</button>
+            </div>
           </div>
           <div class="prop-list" id="properties-list" aria-live="polite">
             <!-- Alimenté par admin.js -->
@@ -246,9 +247,10 @@
         <div class="card">
           <div class="card-header">
             <p class="card-title">Logements à venir</p>
-            <button class="btn btn-primary" onclick="openAddUpcoming()">
-              + Ajouter
-            </button>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="btn btn-outline btn-sm" onclick="openAddProperty()">+ Disponible</button>
+              <button class="btn btn-primary" onclick="openAddUpcoming()">+ À venir</button>
+            </div>
           </div>
           <div class="prop-list" id="upcoming-list" aria-live="polite">
             <!-- Alimenté par admin.js -->

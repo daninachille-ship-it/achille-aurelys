@@ -454,6 +454,37 @@ code { font-family: 'JetBrains Mono', 'Courier New', monospace; font-size: 0.85e
   transform: translateY(-1px);
 }
 
+.btn-success {
+  background: rgba(100,180,120,0.12);
+  color: #6db87a;
+  border: 1px solid rgba(100,180,120,0.25);
+}
+.btn-success:hover {
+  background: rgba(100,180,120,0.22);
+  transform: translateY(-1px);
+}
+
+.btn-warning {
+  background: rgba(200,160,80,0.12);
+  color: #c8a050;
+  border: 1px solid rgba(200,160,80,0.25);
+}
+.btn-warning:hover {
+  background: rgba(200,160,80,0.22);
+  transform: translateY(-1px);
+}
+
+.btn-outline {
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border);
+}
+.btn-outline:hover {
+  border-color: var(--sand);
+  color: var(--sand);
+  transform: translateY(-1px);
+}
+
 .btn-sm {
   padding: 6px 12px;
   font-size: 10.5px;

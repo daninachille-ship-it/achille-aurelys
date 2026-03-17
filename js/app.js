@@ -186,6 +186,13 @@ function applyContent(settings) {
     if (global.contactEmail) el.href = `mailto:${global.contactEmail}`;
   });
 
+  document.querySelectorAll('[data-text="contactPhone"]').forEach(el => {
+    if (global.contactPhone) el.textContent = global.contactPhone;
+  });
+  document.querySelectorAll('[data-text="contactAddress"]').forEach(el => {
+    if (global.address) el.textContent = global.address;
+  });
+
   document.querySelectorAll('[data-href="instagram"]').forEach(el => {
     if (global.instagramUrl) el.href = global.instagramUrl;
   });
@@ -569,7 +576,8 @@ function initContactForm(formspreeId) {
         throw new Error('Erreur serveur');
       }
     } catch {
-      showToast('Erreur. Contactez-nous directement \u00e0 contact@aurelys.fr', 'error');
+      const fallbackEmail = document.querySelector('[data-text="contactEmail"]')?.textContent || 'contact@aurelys.fr';
+      showToast(`Erreur. Contactez-nous directement \u00e0 ${fallbackEmail}`, 'error');
     } finally {
       if (submitBtn) submitBtn.classList.remove('loading');
       if (btnLabel)  btnLabel.textContent = 'Envoyer le message';

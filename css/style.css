@@ -219,11 +219,15 @@ input, textarea, select {
 /* Image de fond */
 .hero-bg-media {
   position: absolute;
-  inset: 0;
+  top: 0; left: 0; right: 0; bottom: 0;
+  width: 100%;
+  height: 100%;
   z-index: 0;
 }
 
 .hero-bg-img {
+  position: absolute;
+  top: 0; left: 0;
   width: 100%;
   height: 100%;
   object-fit: cover;
@@ -233,7 +237,7 @@ input, textarea, select {
 
 .hero-bg-overlay {
   position: absolute;
-  inset: 0;
+  top: 0; left: 0; right: 0; bottom: 0;
   background: linear-gradient(
     160deg,
     rgba(4, 7, 20, 0.65) 0%,
@@ -2011,7 +2015,9 @@ a.contact-detail-value:hover { color: var(--color-accent); }
   }
 
   .editorial-img {
-    aspect-ratio: 16 / 9;
+    aspect-ratio: 3 / 4;
+    max-height: 520px;
+    margin: 0 auto;
   }
 
   .contact-grid {
@@ -2534,20 +2540,20 @@ a.contact-detail-value:hover { color: var(--color-accent); }
   .map-side-panel {
     border-left: none;
     border-top: 1px solid var(--color-border);
-    max-height: 240px;
+    max-height: 320px;
+    overflow-y: auto;
   }
 
   .map-panel-list {
-    display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
-    overflow-x: auto;
-    overflow-y: hidden;
+    display: block;
+    overflow-x: unset;
+    overflow-y: unset;
   }
 
   .map-property-item {
-    min-width: 200px;
-    border-bottom: none;
-    border-right: 1px solid var(--color-border-soft);
+    min-width: unset;
+    border-bottom: 1px solid var(--color-border-soft);
+    border-right: none;
   }
 }
 

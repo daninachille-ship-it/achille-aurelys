@@ -401,6 +401,20 @@ async function _notifySubscribers(type, property) {
   }
 }
 
+/* Test d'envoi newsletter — vérifie la configuration Brevo */
+async function testNewsletterSend() {
+  const testProperty = {
+    id: 'test',
+    title: 'Résidence Test AURELYS',
+    shortDescription: 'Ceci est un email de test pour vérifier que votre configuration Brevo fonctionne correctement.',
+    location: { city: 'Paris', country: 'France' },
+    pricing: { perNight: 350, currency: 'EUR' },
+    media: { coverImage: '' }
+  };
+  showToast('Envoi du test newsletter en cours…');
+  await _notifySubscribers('property_online', testProperty);
+}
+
 /* Définit le logement mis en avant dans l'en-tête du site */
 async function setFeaturedProperty(id) {
   const p = _properties.find(x => x.id === id);
@@ -1146,6 +1160,7 @@ window.deleteFaq                    = deleteFaq;
 window.savePaymentLinks             = savePaymentLinks;
 window.exportSubscribers            = exportSubscribers;
 window.deleteSubscriber             = deleteSubscriber;
+window.testNewsletterSend           = testNewsletterSend;
 window.confirmReservation           = confirmReservation;
 window.cancelReservation            = cancelReservation;
 window.toggleCancelledReservations  = toggleCancelledReservations;

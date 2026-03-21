@@ -430,6 +430,19 @@
 
       <!-- ══ NEWSLETTER ═════════════════════════════════════ -->
       <div id="panel-newsletter" class="admin-panel">
+        <div class="card" style="margin-bottom:20px;">
+          <div class="card-header">
+            <p class="card-title">Tester l'envoi newsletter</p>
+          </div>
+          <div style="padding:16px 20px;">
+            <p style="font-size:13px;color:var(--text-muted);margin-bottom:12px;">
+              Envoie un email de test à tous les abonnés pour vérifier que Brevo est bien configuré
+              (<code>BREVO_API_KEY</code> et <code>FROM_EMAIL</code> dans Netlify).
+            </p>
+            <button class="btn btn-secondary" onclick="testNewsletterSend()">Envoyer un test à tous les abonnés</button>
+          </div>
+        </div>
+
         <div class="card">
           <div class="card-header">
             <p class="card-title">Abonnés newsletter</p>

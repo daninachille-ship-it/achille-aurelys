@@ -161,7 +161,7 @@ function applyContent(settings) {
   if (hero.heroImage) {
     const mainImg = document.getElementById('hero-main-img');
     if (mainImg) {
-      mainImg.src = hero.heroImage;
+      mainImg.style.backgroundImage = `url(${hero.heroImage})`;
       mainImg.dataset.adminOverride = '1'; // priorité sur le logement featured
     }
   }
@@ -251,8 +251,8 @@ function _updateHeroCard() {
   const cover   = featured.media?.coverImage || '';
   const mainImg = document.getElementById('hero-main-img');
   if (mainImg && cover && !mainImg.dataset.adminOverride) {
-    mainImg.src = cover;
-    mainImg.alt = featured.title || 'Résidence AURELYS';
+    mainImg.style.backgroundImage = `url(${cover})`;
+    mainImg.setAttribute('aria-label', featured.title || 'Résidence AURELYS');
   }
 }
 

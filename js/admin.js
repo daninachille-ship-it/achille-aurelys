@@ -176,6 +176,7 @@ function loadPanel(name) {
 
 async function _refreshPanel(name) {
   await _loadAllData();
+  _renderDashboard(); // toujours mettre à jour les stats
   switch (name) {
     case 'dashboard':    _renderDashboard();    break;
     case 'properties':   _renderProperties();   break;

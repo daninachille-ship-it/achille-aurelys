@@ -113,28 +113,39 @@ function _setupAdminRealtime() {
 }
 
 async function _loadAllData() {
-  try {
-    // Expirer les réservations pending non payées (> 2h)
-    AureDB.expirePendingReservations(2).catch(() => {});
+  // Expirer les réservations pending non payées (> 2h)
+  AureDB.expirePendingReservations(2).catch(() => {});
 
-    const [props, upcoming, settings, subscribers, reservations, legalPages, faqItems] = await Promise.all([
-      AureDB.getProperties(),
-      AureDB.getUpcomingProperties(),
-      AureDB.getSettings(),
-      AureDB.getSubscribers(),
-      AureDB.getReservations(),
-      AureDB.getLegalPages(),
-      AureDB.getFaqItems()
-    ]);
-    _properties   = props;
-    _upcoming     = upcoming;
-    _settings     = settings;
-    _subscribers  = subscribers;
-    _reservations = reservations;
-    _legalPages   = legalPages;
-    _faqItems     = faqItems;
-  } catch (err) {
-    showToast('Erreur de chargement : ' + err.message, 'error');
+  // Avertissement progressif si la connexion est lente (mobile)
+  const slowTimer = setTimeout(() => {
+    if (!_settings) showToast('Connexion lente — chargement en cours…', 'error');
+  }, 8000);
+
+  // Promise.allSettled : chaque requête est indépendante — une erreur n'en bloque pas les autres
+  const [propsR, upcomingR, settingsR, subsR, resR, legalR, faqR] = await Promise.allSettled([
+    AureDB.getProperties(),
+    AureDB.getUpcomingProperties(),
+    AureDB.getSettings(),
+    AureDB.getSubscribers(),
+    AureDB.getReservations(),
+    AureDB.getLegalPages(),
+    AureDB.getFaqItems()
+  ]);
+
+  clearTimeout(slowTimer);
+
+  if (propsR.status    === 'fulfilled') _properties   = propsR.value;
+  if (upcomingR.status === 'fulfilled') _upcoming     = upcomingR.value;
+  if (subsR.status     === 'fulfilled') _subscribers  = subsR.value;
+  if (resR.status      === 'fulfilled') _reservations = resR.value;
+  if (legalR.status    === 'fulfilled') _legalPages   = legalR.value;
+  if (faqR.status      === 'fulfilled') _faqItems     = faqR.value;
+
+  if (settingsR.status === 'fulfilled') {
+    _settings = settingsR.value;
+  } else {
+    console.error('[Admin] Erreur chargement settings :', settingsR.reason);
+    if (!_settings) showToast('Impossible de charger les paramètres. Vérifiez la connexion.', 'error');
   }
 }
 
@@ -631,10 +642,15 @@ async function deleteUpcoming(id) {
 
 /* ── Textes du site ─────────────────────────────────────────── */
 function _renderTextsForm() {
-  const g = _settings?.global || {};
-  const h = _settings?.home?.hero || {};
-  const e = _settings?.home?.editorial || {};
-  const n = _settings?.home?.newsletter || {};
+  if (!_settings) {
+    // Données pas encore chargées — réessayer dans 1.5 s
+    setTimeout(() => { if (_currentPanel === 'texts') _renderTextsForm(); }, 1500);
+    return;
+  }
+  const g = _settings.global || {};
+  const h = (_settings.home || {}).hero || {};
+  const e = (_settings.home || {}).editorial || {};
+  const n = (_settings.home || {}).newsletter || {};
   _setField('text-tagline',               g.tagline);
   _setField('text-hero-title',            h.title);
   _setField('text-hero-subtitle',         h.subtitle);
@@ -660,7 +676,10 @@ function _renderTextsForm() {
 }
 
 async function saveTexts() {
-  if (!_settings)                  _settings = {};
+  if (!_settings) {
+    showToast('Données non chargées — rechargez la page avant de sauvegarder.', 'error');
+    return;
+  }
   if (!_settings.global)           _settings.global = {};
   if (!_settings.home)             _settings.home = {};
   if (!_settings.home.hero)        _settings.home.hero = {};

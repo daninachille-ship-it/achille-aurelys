@@ -33,10 +33,25 @@ exports.handler = async (event) => {
   const FROM_NAME  = process.env.FROM_NAME  || 'AURELYS';
 
   if (!BREVO_KEY || !SUPA_URL || !SUPA_KEY) {
+    const missing = [
+      !BREVO_KEY  && 'BREVO_API_KEY',
+      !SUPA_URL   && 'SUPABASE_URL',
+      !SUPA_KEY   && 'SUPABASE_SERVICE_KEY',
+    ].filter(Boolean).join(', ');
+    console.error('[notify-subscribers] Variables manquantes :', missing);
     return {
       statusCode: 500,
       headers: _corsHeaders(),
-      body: JSON.stringify({ error: 'Variables manquantes : BREVO_API_KEY, SUPABASE_URL, SUPABASE_SERVICE_KEY.' })
+      body: JSON.stringify({ error: `Variables Netlify manquantes : ${missing}` })
+    };
+  }
+
+  if (!FROM_EMAIL || FROM_EMAIL === 'votre@gmail.com') {
+    console.error('[notify-subscribers] FROM_EMAIL non configuré ou invalide :', FROM_EMAIL);
+    return {
+      statusCode: 500,
+      headers: _corsHeaders(),
+      body: JSON.stringify({ error: 'FROM_EMAIL non configuré dans Netlify. Ajoutez une adresse vérifiée dans Brevo → Senders.' })
     };
   }
 
@@ -175,11 +190,15 @@ exports.handler = async (event) => {
       });
       if (res.ok) {
         sent += batch.length;
+        console.log(`[notify-subscribers] Batch envoyé : ${batch.length} emails`);
       } else {
-        const err = await res.json();
-        errors.push(err.message || JSON.stringify(err));
+        const brevoErr = await res.json().catch(() => ({}));
+        const msg = brevoErr.message || JSON.stringify(brevoErr);
+        console.error('[notify-subscribers] Brevo erreur :', res.status, msg);
+        errors.push(`Brevo ${res.status}: ${msg}`);
       }
     } catch (err) {
+      console.error('[notify-subscribers] Fetch erreur :', err.message);
       errors.push(err.message);
     }
   }

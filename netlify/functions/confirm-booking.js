@@ -143,22 +143,27 @@ exports.handler = async (event) => {
     }).format(n / 100);
 
     try {
-      await fetch(`https://formspree.io/f/${FORMSPREE_ID}`, {
+      const fpRes = await fetch(`https://formspree.io/f/${FORMSPREE_ID}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({
-          _subject:        `[AURELYS] Nouvelle réservation — ${booking.propertyTitle || 'Logement'}`,
-          référence:       refId,
-          logement:        booking.propertyTitle || '—',
-          'client nom':    booking.guestName     || '—',
-          'client email':  booking.guestEmail    || '—',
-          'client tél':    booking.guestPhone    || '—',
-          arrivée:         booking.checkIn        || '—',
-          départ:          booking.checkOut       || '—',
-          'montant total': fmtAdmin(booking.total, booking.currency),
-          paiement:        'Confirmé (Stripe)',
+          email:       booking.guestEmail || '',   // champ requis par Formspree
+          _replyto:    booking.guestEmail || '',
+          _subject:    `[AURELYS] Reservation confirmee - ${booking.propertyTitle || 'Logement'}`,
+          reference:   refId              || '',
+          logement:    booking.propertyTitle || '',
+          client_nom:  booking.guestName    || '',
+          client_tel:  booking.guestPhone   || '',
+          arrivee:     booking.checkIn      || '',
+          depart:      booking.checkOut     || '',
+          montant:     fmtAdmin(booking.total, booking.currency),
+          paiement:    'Confirme Stripe',
         }),
       });
+      if (!fpRes.ok) {
+        const fpData = await fpRes.json().catch(() => ({}));
+        console.error('[confirm-booking] Formspree error:', fpRes.status, JSON.stringify(fpData));
+      }
     } catch (e) {
       console.error('[confirm-booking] Formspree admin error:', e.message);
     }

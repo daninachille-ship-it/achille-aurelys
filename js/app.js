@@ -247,6 +247,7 @@ function _updateHeroCard() {
   const price    = featured.pricing?.perNight || 0;
   const currency = featured.pricing?.currency || 'EUR';
 
+  // Texte de la carte flottante
   const labelEl = document.getElementById('hero-floating-label');
   const titleEl = document.getElementById('hero-floating-title');
   const priceEl = document.getElementById('hero-floating-price');
@@ -256,6 +257,21 @@ function _updateHeroCard() {
   if (priceEl && price) {
     const sym = currency === 'EUR' ? '\u20ac' : currency === 'USD' ? '$' : currency;
     priceEl.innerHTML = `${price} <span>${sym} / nuit</span>`;
+  }
+
+  // Images du héro
+  const cover   = featured.media?.coverImage || '';
+  const gallery = featured.media?.gallery    || [];
+  const mainImg = document.getElementById('hero-main-img');
+  const secImg  = document.getElementById('hero-secondary-img');
+
+  if (mainImg && cover) {
+    mainImg.src = cover;
+    mainImg.alt = featured.title || 'Résidence AURELYS';
+  }
+  if (secImg) {
+    const secSrc = gallery.length > 1 ? gallery[1] : (gallery[0] || cover);
+    if (secSrc) secImg.src = secSrc;
   }
 }
 

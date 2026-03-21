@@ -139,26 +139,35 @@ exports.handler = async (event) => {
 
     /* Notifier l'admin via Formspree dès qu'un client initie un paiement */
     if (FORMSPREE_ID && guest && dates) {
-      const currency = (pricing.currency || 'EUR').toUpperCase();
+      const cur      = (pricing.currency || 'EUR').toUpperCase();
       const totalFmt = new Intl.NumberFormat('fr-FR', {
-        style: 'currency', currency, minimumFractionDigits: 0
+        style: 'currency', currency: cur, minimumFractionDigits: 0
       }).format(pricing.total || 0);
-      fetch(`https://formspree.io/f/${FORMSPREE_ID}`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-        body: JSON.stringify({
-          _subject:        `[AURELYS] Demande de réservation — ${propertyTitle || 'Logement'}`,
-          référence:       reservationId || '—',
-          logement:        propertyTitle || '—',
-          'client nom':    guest.name   || '—',
-          'client email':  guest.email  || '—',
-          'client tél':    guest.phone  || '—',
-          arrivée:         dates.checkIn  || '—',
-          départ:          dates.checkOut || '—',
-          'montant total': totalFmt,
-          statut:          'En attente de paiement Stripe',
-        }),
-      }).catch(() => {}); // Non bloquant
+      try {
+        const fpRes = await fetch(`https://formspree.io/f/${FORMSPREE_ID}`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+          body: JSON.stringify({
+            email:       guest.email  || '',   // champ requis par Formspree
+            _replyto:    guest.email  || '',
+            _subject:    `[AURELYS] Demande reservation - ${propertyTitle || 'Logement'}`,
+            reference:   reservationId || '',
+            logement:    propertyTitle || '',
+            client_nom:  guest.name   || '',
+            client_tel:  guest.phone  || '',
+            arrivee:     dates.checkIn  || '',
+            depart:      dates.checkOut || '',
+            montant:     totalFmt,
+            statut:      'En attente de paiement Stripe',
+          }),
+        });
+        if (!fpRes.ok) {
+          const fpData = await fpRes.json().catch(() => ({}));
+          console.error('[create-checkout] Formspree error:', fpRes.status, JSON.stringify(fpData));
+        }
+      } catch (e) {
+        console.error('[create-checkout] Formspree fetch error:', e.message);
+      }
     }
 
     return {

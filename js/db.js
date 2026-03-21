@@ -501,6 +501,53 @@ const AureDB = (() => {
     if (e2) throw e2;
   }
 
+  /* Synchroniser availability_blocks avec l'état réel des réservations
+     - Supprime les blocs orphelins liés à des réservations annulées
+     - Bloque les dates manquantes pour les réservations confirmées
+     Retourne { freed, blocked } */
+  async function syncAvailability() {
+    const client = _getClient();
+    if (!client) throw new Error('Supabase non configuré');
+
+    const { data: reservations } = await client
+      .from('reservations')
+      .select('id, status, property_id, check_in, check_out');
+
+    if (!reservations) return { freed: 0, blocked: 0 };
+
+    let freed = 0;
+    let blocked = 0;
+
+    for (const r of reservations) {
+      if (r.status === 'cancelled') {
+        // Supprimer tous les blocs liés à cette réservation annulée
+        const { data: deleted } = await client
+          .from('availability_blocks')
+          .delete()
+          .eq('reservation_id', r.id)
+          .select('id');
+        freed += (deleted || []).length;
+      } else if (r.status === 'confirmed' && r.property_id && r.check_in && r.check_out) {
+        // S'assurer que les dates sont bien bloquées
+        const dates = _expandDateRange(r.check_in, r.check_out);
+        const rows = dates.map(date => ({
+          property_id:    r.property_id,
+          date,
+          type:           'reservation',
+          reservation_id: r.id,
+        }));
+        if (rows.length > 0) {
+          await client
+            .from('availability_blocks')
+            .upsert(rows, { onConflict: 'property_id,date' });
+          blocked += rows.length;
+        }
+      }
+    }
+
+    return { freed, blocked };
+  }
+
   /* Annuler automatiquement les réservations pending trop anciennes */
   async function expirePendingReservations(hoursOld = 2) {
     const client = _getClient();
@@ -1021,6 +1068,7 @@ const AureDB = (() => {
     // Disponibilité
     getAvailabilityBlocks, createAvailabilityBlock, deleteAvailabilityBlock,
     blockReservationDates, setFeaturedProperty, expirePendingReservations,
+    syncAvailability,
 
     // Newsletter
     getSubscribers, addSubscriber, deleteSubscriber,

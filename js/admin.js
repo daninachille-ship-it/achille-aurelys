@@ -627,6 +627,7 @@ function _renderTextsForm() {
   _setField('text-hero-image-secondary',  h.heroImageSecondary || '');
   _setField('text-about-title',           e.title);
   _setField('text-about-body',            e.body);
+  _setField('text-about-image',           e.image || '');
   _setField('text-newsletter-title',      n.title);
   _setField('text-newsletter-text',       n.body);
   _setField('text-contact-email',         g.contactEmail);
@@ -661,6 +662,7 @@ async function saveTexts() {
   h.heroImageSecondary  = _getField('text-hero-image-secondary');
   e.title               = _getField('text-about-title');
   e.body                = _getField('text-about-body');
+  e.image               = _getField('text-about-image');
   n.title               = _getField('text-newsletter-title');
   n.body                = _getField('text-newsletter-text');
   g.contactEmail        = _getField('text-contact-email');

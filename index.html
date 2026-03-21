@@ -49,113 +49,48 @@
 
 <!-- ── Hero ────────────────────────────────────────────────── -->
 <section class="hero" aria-label="Accueil">
-  <div class="hero-bg">
-    <div class="hero-orb hero-orb-1" aria-hidden="true"></div>
-    <div class="hero-orb hero-orb-2" aria-hidden="true"></div>
-    <div class="hero-grain" aria-hidden="true"></div>
+
+  <!-- Image de fond plein écran -->
+  <div class="hero-bg-media">
+    <img
+      id="hero-main-img"
+      class="hero-bg-img"
+      src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1920&q=90"
+      alt="Résidence AURELYS"
+      loading="eager"
+      fetchpriority="high"
+    >
+    <div class="hero-bg-overlay"></div>
   </div>
 
-  <!-- Watermark -->
-  <div class="hero-watermark" aria-hidden="true">AURELYS</div>
+  <!-- Texture grain -->
+  <div class="hero-grain" aria-hidden="true"></div>
 
-  <!-- Spotlight -->
-  <div id="hero-spotlight" aria-hidden="true"></div>
-
-  <div class="container hero-container">
-    <div class="hero-split">
-
-      <!-- Colonne gauche : texte -->
-      <div class="hero-content">
-        <div class="hero-eyebrow">
-          <span class="hero-eyebrow-line" aria-hidden="true"></span>
-          <span class="hero-eyebrow-text" data-text="heroLabel">Collection AURELYS</span>
-        </div>
-
-        <h1 class="hero-title" id="hero-title">
-          Intemporel<br><em>par choix.</em>
-        </h1>
-
-        <p class="hero-subtitle" id="hero-subtitle">
-          Des résidences d'exception sélectionnées pour ceux qui refusent de choisir entre le confort et l'élégance.
-        </p>
-
-        <div class="hero-actions">
-          <a href="#logements" class="btn btn-primary">
-            Découvrir les résidences
-            <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
-              <path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
-            </svg>
-          </a>
-          <a href="#a-propos" class="btn btn-outline">Notre approche</a>
-        </div>
-
-        <div class="hero-stats" aria-label="Chiffres clés">
-          <div class="hero-stat">
-            <p class="hero-stat-number">3+</p>
-            <p class="hero-stat-label">Résidences</p>
-          </div>
-          <div class="hero-stat-divider" aria-hidden="true"></div>
-          <div class="hero-stat">
-            <p class="hero-stat-number">5★</p>
-            <p class="hero-stat-label">Expérience</p>
-          </div>
-          <div class="hero-stat-divider" aria-hidden="true"></div>
-          <div class="hero-stat">
-            <p class="hero-stat-number">98%</p>
-            <p class="hero-stat-label">Satisfaction</p>
-          </div>
-        </div>
+  <!-- Contenu centré -->
+  <div class="hero-center-wrap">
+    <div class="hero-center-content">
+      <span class="hero-eyebrow-text" data-text="heroLabel">Hébergements atypiques de prestige</span>
+      <h1 class="hero-title" id="hero-title">AURELYS</h1>
+      <div class="hero-divider-line" aria-hidden="true"></div>
+      <p class="hero-subtitle" id="hero-subtitle">Intemporel par choix.</p>
+      <div class="hero-actions">
+        <a href="#logements" class="btn btn-primary">
+          Découvrir les résidences
+          <svg width="14" height="14" viewBox="0 0 14 14" fill="none" aria-hidden="true">
+            <path d="M1 7h12M8 2l5 5-5 5" stroke="currentColor" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+          </svg>
+        </a>
+        <a href="#a-propos" class="btn btn-outline">Notre approche</a>
       </div>
-
-      <!-- Colonne droite : visuel éditorial -->
-      <div class="hero-visual" aria-hidden="true">
-        <!-- Image principale -->
-        <div class="hero-img-frame">
-          <img
-            class="hero-img"
-            id="hero-main-img"
-            src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200&q=90"
-            alt="Résidence AURELYS"
-            loading="eager"
-          >
-          <!-- Badge disponibilité -->
-          <div class="hero-img-badge">
-            <span class="hero-img-badge-dot"></span>
-            Disponible maintenant
-          </div>
-        </div>
-
-        <!-- Image secondaire (overlapping) -->
-        <div class="hero-img-secondary">
-          <img
-            id="hero-secondary-img"
-            src="https://images.unsplash.com/photo-1600607687939-ce8a6c25118c?w=700&q=85"
-            alt=""
-            loading="lazy"
-          >
-        </div>
-
-        <!-- Floating card infos (rempli dynamiquement par app.js) -->
-        <div class="hero-floating-card">
-          <p class="hero-floating-label" id="hero-floating-label">Paris · Canal Saint-Martin</p>
-          <p class="hero-floating-title" id="hero-floating-title">Appartement loft</p>
-          <p class="hero-floating-price" id="hero-floating-price">320 <span>€ / nuit</span></p>
-        </div>
-
-        <!-- Floating rating -->
-        <div class="hero-floating-rating">
-          <div class="hero-floating-stars">★★★★★</div>
-          <p class="hero-floating-review">« Un lieu hors du temps… »</p>
-        </div>
-      </div>
-
     </div>
   </div>
 
+  <!-- Scroll indicator -->
   <div class="hero-scroll" aria-hidden="true">
+    <span class="hero-scroll-text">Défiler</span>
     <span class="hero-scroll-line"></span>
-    <span class="hero-scroll-text">Scroll</span>
   </div>
+
 </section>
 
 <!-- ── Nos valeurs ──────────────────────────────────────────── -->
@@ -311,6 +246,7 @@
 
       <div class="editorial-img-wrap fade-in fade-in-delay-2">
         <img
+          id="about-img"
           class="editorial-img"
           src="https://images.unsplash.com/photo-1600585154526-990dced4db0d?w=900&q=85"
           alt="Intérieur d'une résidence d'exception"

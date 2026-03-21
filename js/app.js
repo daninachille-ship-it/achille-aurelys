@@ -160,11 +160,10 @@ function applyContent(settings) {
 
   if (hero.heroImage) {
     const mainImg = document.getElementById('hero-main-img');
-    if (mainImg) mainImg.src = hero.heroImage;
-  }
-  if (hero.heroImageSecondary) {
-    const secImg = document.getElementById('hero-secondary-img');
-    if (secImg) secImg.src = hero.heroImageSecondary;
+    if (mainImg) {
+      mainImg.src = hero.heroImage;
+      mainImg.dataset.adminOverride = '1'; // priorité sur le logement featured
+    }
   }
 
   _updateHeroCard();
@@ -174,6 +173,11 @@ function applyContent(settings) {
 
   const aboutBody = document.getElementById('about-body');
   if (aboutBody) aboutBody.textContent = ed.body ? ed.body.split('\n\n')[0] : '';
+
+  if (ed.image) {
+    const aboutImg = document.getElementById('about-img');
+    if (aboutImg) { aboutImg.src = ed.image; aboutImg.style.display = ''; }
+  }
 
   const nlTitle = document.getElementById('newsletter-title');
   if (nlTitle) nlTitle.textContent = nl.title || 'Avant-premi\u00e8re.';
@@ -243,35 +247,12 @@ function _updateHeroCard() {
                     available.sort((a, b) => (a.order ?? 0) - (b.order ?? 0))[0];
   if (!featured) return;
 
-  const label    = [featured.location?.city, featured.location?.area].filter(Boolean).join(' \u00b7 ');
-  const price    = featured.pricing?.perNight || 0;
-  const currency = featured.pricing?.currency || 'EUR';
-
-  // Texte de la carte flottante
-  const labelEl = document.getElementById('hero-floating-label');
-  const titleEl = document.getElementById('hero-floating-title');
-  const priceEl = document.getElementById('hero-floating-price');
-
-  if (labelEl && label) labelEl.textContent = label;
-  if (titleEl && featured.title) titleEl.textContent = featured.title;
-  if (priceEl && price) {
-    const sym = currency === 'EUR' ? '\u20ac' : currency === 'USD' ? '$' : currency;
-    priceEl.innerHTML = `${price} <span>${sym} / nuit</span>`;
-  }
-
-  // Images du héro
+  // Image de fond du hero (uniquement si pas déjà définie par les settings admin)
   const cover   = featured.media?.coverImage || '';
-  const gallery = featured.media?.gallery    || [];
   const mainImg = document.getElementById('hero-main-img');
-  const secImg  = document.getElementById('hero-secondary-img');
-
-  if (mainImg && cover) {
+  if (mainImg && cover && !mainImg.dataset.adminOverride) {
     mainImg.src = cover;
     mainImg.alt = featured.title || 'Résidence AURELYS';
-  }
-  if (secImg) {
-    const secSrc = gallery.length > 1 ? gallery[1] : (gallery[0] || cover);
-    if (secSrc) secImg.src = secSrc;
   }
 }
 

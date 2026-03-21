@@ -27,7 +27,8 @@ exports.handler = async (event) => {
   /* ── Variables d'environnement ─────────────────────────── */
   const BREVO_KEY  = process.env.BREVO_API_KEY;
   const SUPA_URL   = process.env.SUPABASE_URL;
-  const SUPA_KEY   = process.env.SUPABASE_SERVICE_KEY;
+  // Accepte la clé service_role (recommandé) OU la clé anon en fallback
+  const SUPA_KEY   = process.env.SUPABASE_SERVICE_KEY || process.env.SUPABASE_ANON_KEY;
   const SITE_URL   = (process.env.SITE_URL || 'https://aurelyscollection.com').replace(/\/$/, '');
   const FROM_EMAIL = process.env.FROM_EMAIL || 'votre@gmail.com';
   const FROM_NAME  = process.env.FROM_NAME  || 'AURELYS';
@@ -36,7 +37,7 @@ exports.handler = async (event) => {
     const missing = [
       !BREVO_KEY  && 'BREVO_API_KEY',
       !SUPA_URL   && 'SUPABASE_URL',
-      !SUPA_KEY   && 'SUPABASE_SERVICE_KEY',
+      !SUPA_KEY   && 'SUPABASE_SERVICE_KEY (ou SUPABASE_ANON_KEY)',
     ].filter(Boolean).join(', ');
     console.error('[notify-subscribers] Variables manquantes :', missing);
     return {
@@ -72,17 +73,24 @@ exports.handler = async (event) => {
       headers: {
         apikey:        SUPA_KEY,
         Authorization: `Bearer ${SUPA_KEY}`,
-        'Content-Type': 'application/json'
+        'Content-Type': 'application/json',
+        Prefer:        'return=representation'
       }
     });
     const data = await res.json();
+    if (!res.ok) {
+      const errMsg = data?.message || data?.hint || JSON.stringify(data);
+      console.error('[notify-subscribers] Supabase HTTP', res.status, errMsg);
+      return { statusCode: 500, headers: _corsHeaders(), body: JSON.stringify({ error: `Supabase ${res.status}: ${errMsg}` }) };
+    }
     subscribers = Array.isArray(data) ? data.map(r => r.email).filter(Boolean) : [];
+    console.log('[notify-subscribers] Abonnés trouvés :', subscribers.length);
   } catch (err) {
     return { statusCode: 500, headers: _corsHeaders(), body: JSON.stringify({ error: 'Erreur Supabase : ' + err.message }) };
   }
 
   if (subscribers.length === 0) {
-    return { statusCode: 200, headers: _corsHeaders(), body: JSON.stringify({ sent: 0, message: 'Aucun abonné.' }) };
+    return { statusCode: 200, headers: _corsHeaders(), body: JSON.stringify({ sent: 0, message: 'Aucun abonné trouvé dans Supabase. Vérifiez la table newsletter_subscribers et les RLS policies (SELECT doit être autorisé).' }) };
   }
 
   /* ── Construction de l'email ───────────────────────────── */

@@ -219,9 +219,7 @@ input, textarea, select {
 /* Image de fond — background-image CSS (iOS Safari compatible) */
 .hero-bg-media {
   position: absolute;
-  top: 0; left: 0;
-  width: 100%;
-  height: 100%;
+  top: 0; left: 0; right: 0; bottom: 0;
   z-index: 0;
   background-size: cover;
   background-position: center 40%;
@@ -230,9 +228,7 @@ input, textarea, select {
 
 .hero-bg-overlay {
   position: absolute;
-  top: 0; left: 0;
-  width: 100%;
-  height: 100%;
+  top: 0; left: 0; right: 0; bottom: 0;
   background: linear-gradient(
     160deg,
     rgba(4, 7, 20, 0.65) 0%,
@@ -267,6 +263,7 @@ input, textarea, select {
 .hero-center-content {
   max-width: 840px;
   width: 100%;
+  text-align: center;
 }
 
 /* Eyebrow */
@@ -2146,7 +2143,8 @@ a.contact-detail-value:hover { color: var(--color-accent); }
   .map-side-panel {
     border-left: none;
     border-top: 1px solid var(--color-border);
-    max-height: 280px;
+    max-height: 300px;
+    overflow-y: auto;
   }
 }
 
@@ -2166,6 +2164,7 @@ a.contact-detail-value:hover { color: var(--color-accent); }
 }
 
 @media (max-width: 480px) {
+  .hero-center-wrap { padding-left: 24px; padding-right: 24px; }
   .hero-title { font-size: clamp(2.6rem, 16vw, 4.2rem); }
   .hero-actions { flex-direction: column; align-items: center; width: 100%; }
   .hero-actions .btn { width: 100%; justify-content: center; }

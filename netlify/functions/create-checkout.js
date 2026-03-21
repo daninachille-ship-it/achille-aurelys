@@ -194,9 +194,9 @@ exports.handler = async (event) => {
           arrivee:     dates.checkIn  || '',
           depart:      dates.checkOut || '',
           montant:     totalFmt,
-          statut:      'En attente de paiement Stripe',
+          statut:         'En attente de paiement Stripe',
+          message_client: message || '',
         };
-        if (message) fpBody.message_client = message;
         const fpRes = await fetch(`https://formspree.io/f/${FORMSPREE_ID}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },

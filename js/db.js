@@ -365,13 +365,8 @@ const AureDB = (() => {
 
     if (error) throw error;
 
-    // Bloquer automatiquement les dates
-    await _blockReservationDates(
-      res.propertyId,
-      res.dates?.checkIn || res.checkIn,
-      res.dates?.checkOut || res.checkOut,
-      data.id
-    );
+    // Les dates sont bloquées APRÈS confirmation du paiement Stripe (confirm-booking.js)
+    // Ne pas bloquer ici pour éviter de bloquer sur une réservation non payée
 
     return data;
   }
@@ -386,6 +381,14 @@ const AureDB = (() => {
       .eq('id', id);
 
     if (error) throw error;
+
+    // Libérer les dates si la réservation est annulée
+    if (status === 'cancelled') {
+      await client
+        .from('availability_blocks')
+        .delete()
+        .eq('reservation_id', id);
+    }
   }
 
   async function deleteReservation(id) {

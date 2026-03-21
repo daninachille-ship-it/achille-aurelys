@@ -58,7 +58,7 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers: _corsHeaders(), body: JSON.stringify({ error: 'JSON invalide.' }) };
   }
 
-  const { reservationId, propertyTitle, pricing, guest, dates } = payload;
+  const { reservationId, propertyId, propertyTitle, pricing, guest, dates } = payload;
 
   if (!reservationId || !pricing || !guest || !dates) {
     return {
@@ -100,6 +100,7 @@ exports.handler = async (event) => {
 
   /* Métadonnées pour le suivi */
   params.set('metadata[reservation_id]', reservationId);
+  if (propertyId) params.set('metadata[property_id]', propertyId);
   params.set('metadata[property_title]', propertyTitle);
   params.set('metadata[check_in]',       dates.checkIn);
   params.set('metadata[check_out]',      dates.checkOut);

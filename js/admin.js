@@ -89,6 +89,27 @@ async function _showAdminApp() {
   document.getElementById('admin-app').classList.add('visible');
   await _loadAllData();
   loadPanel('dashboard');
+  _setupAdminRealtime();
+}
+
+function _setupAdminRealtime() {
+  // Mise à jour en temps réel quand une réservation arrive
+  AureDB.subscribeToChanges('reservations', async () => {
+    const reservations = await AureDB.getReservations();
+    _reservations = reservations;
+    if (_currentPanel === 'reservations' || _currentPanel === 'dashboard') {
+      _renderReservations();
+      _renderDashboard();
+    }
+  });
+
+  // Mise à jour des disponibilités en temps réel
+  AureDB.subscribeToChanges('availability_blocks', async () => {
+    if (_currentPanel === 'availability') {
+      const propId = document.getElementById('avail-property-select')?.value;
+      if (propId) loadAvailabilityForProperty(propId);
+    }
+  });
 }
 
 async function _loadAllData() {
@@ -333,6 +354,13 @@ async function saveProperty() {
     _closeModal('prop-modal');
     await _refreshPanel('properties');
     showToast(_editingPropId ? 'Logement mis \u00e0 jour.' : 'Logement ajout\u00e9.');
+
+    // Notifier les abonnés si le logement vient d'être mis en ligne
+    const wasOffline = existingProp && existingProp.available === false;
+    const isNewOnline = !existingProp && prop.available;
+    if ((wasOffline || isNewOnline) && prop.available) {
+      _notifySubscribers('property_online', prop);
+    }
   } catch (err) {
     showToast('Erreur : ' + err.message, 'error');
   }
@@ -838,22 +866,29 @@ function _renderReservations() {
   const tbody = document.getElementById('reservations-body');
   if (!tbody) return;
   if (_reservations.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:40px;color:var(--text-muted);">Aucune r\u00e9servation pour le moment.</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted);">Aucune r\u00e9servation pour le moment.</td></tr>';
     return;
   }
   tbody.innerHTML = _reservations.map(r => {
-    const labels  = { pending: 'En attente', confirmed: 'Confirm\u00e9e', cancelled: 'Annul\u00e9e' };
-    const classes = { pending: 'badge-pending', confirmed: 'badge-available', cancelled: 'badge-unavailable' };
+    const labels        = { pending: 'En attente', confirmed: 'Confirm\u00e9e', cancelled: 'Annul\u00e9e' };
+    const classes       = { pending: 'badge-pending', confirmed: 'badge-available', cancelled: 'badge-unavailable' };
+    const payLabels     = { unpaid: 'Non pay\u00e9', paid: 'Pay\u00e9', refunded: 'Rembours\u00e9' };
+    const payClasses    = { unpaid: 'badge-pending', paid: 'badge-available', refunded: 'badge-unavailable' };
+    const currency      = r.currency || 'EUR';
+    const totalFmt      = r.total_price
+      ? new Intl.NumberFormat('fr-FR', { style: 'currency', currency, minimumFractionDigits: 0 }).format(r.total_price)
+      : '—';
     return `<tr>
       <td>${_formatDate(r.created_at)}</td>
       <td>${_esc(r.property_title || '')}</td>
-      <td>${_esc(r.guest_name || '')}</td>
-      <td>${_esc(r.guest_email || '')}</td>
-      <td>${_esc(r.check_in || '')} \u2192 ${_esc(r.check_out || '')}</td>
+      <td>${_esc(r.guest_name || '')}<br><small style="color:var(--text-muted)">${_esc(r.guest_email || '')}</small>${r.guest_phone ? `<br><small style="color:var(--text-muted)">${_esc(r.guest_phone)}</small>` : ''}</td>
+      <td>${_esc(r.check_in || '')} \u2192 ${_esc(r.check_out || '')}<br><small style="color:var(--text-muted)">${r.nights || ''} nuit${r.nights > 1 ? 's' : ''} \u00b7 ${r.guests || 1} voyageur${(r.guests || 1) > 1 ? 's' : ''}</small></td>
+      <td style="font-weight:600">${totalFmt}</td>
+      <td><span class="badge ${payClasses[r.payment_status] || ''}">${payLabels[r.payment_status] || r.payment_status || '—'}</span></td>
       <td><span class="badge ${classes[r.status] || ''}">${labels[r.status] || r.status}</span></td>
       <td>
-        ${r.status !== 'confirmed' ? `<button class="btn btn-secondary btn-xs" onclick="confirmReservation('${r.id}')">Confirmer</button>` : ''}
-        <button class="btn btn-danger btn-xs" onclick="cancelReservation('${r.id}')">Annuler</button>
+        ${r.status !== 'confirmed' ? `<button class="btn btn-secondary btn-xs" onclick="confirmReservation('${r.id}')">Confirmer</button> ` : ''}
+        ${r.status !== 'cancelled' ? `<button class="btn btn-danger btn-xs" onclick="cancelReservation('${r.id}')">Annuler</button>` : ''}
       </td>
     </tr>`;
   }).join('');

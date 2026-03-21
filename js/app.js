@@ -234,10 +234,11 @@ function _renderFooter(footer) {
 }
 
 function _updateHeroCard() {
-  const props    = Object.values(window._aureProps || {});
-  const featured = props
-    .filter(p => p.available !== false)
-    .sort((a, b) => (a.order ?? 0) - (b.order ?? 0))[0];
+  const props     = Object.values(window._aureProps || {});
+  const available = props.filter(p => p.available !== false);
+  // Priorité au logement marqué "featured", sinon le premier par ordre
+  const featured  = available.find(p => p.featured) ||
+                    available.sort((a, b) => (a.order ?? 0) - (b.order ?? 0))[0];
   if (!featured) return;
 
   const label    = [featured.location?.city, featured.location?.area].filter(Boolean).join(' \u00b7 ');

@@ -15,6 +15,7 @@
  *   SITE_URL             — URL publique (ex: https://aurelyscollection.com)
  *   FROM_EMAIL           — adresse expéditrice
  *   FROM_NAME            — nom affiché (ex: AURELYS)
+ *   FORMSPREE_ADMIN_ID   — ID Formspree pour notifier l'admin (ex: xpzgkqrd)
  */
 
 'use strict';
@@ -29,13 +30,14 @@ exports.handler = async (event) => {
   }
 
   /* ── Variables d'environnement ─────────────────────────── */
-  const STRIPE_KEY = process.env.STRIPE_SECRET_KEY;
-  const SUPA_URL   = process.env.SUPABASE_URL;
-  const SUPA_KEY   = process.env.SUPABASE_SERVICE_KEY;
-  const BREVO_KEY  = process.env.BREVO_API_KEY;
-  const SITE_URL   = (process.env.SITE_URL || 'https://aurelyscollection.com').replace(/\/$/, '');
-  const FROM_EMAIL = process.env.FROM_EMAIL || 'noreply@aurelyscollection.com';
-  const FROM_NAME  = process.env.FROM_NAME  || 'AURELYS';
+  const STRIPE_KEY      = process.env.STRIPE_SECRET_KEY;
+  const SUPA_URL        = process.env.SUPABASE_URL;
+  const SUPA_KEY        = process.env.SUPABASE_SERVICE_KEY;
+  const BREVO_KEY       = process.env.BREVO_API_KEY;
+  const FORMSPREE_ID    = process.env.FORMSPREE_ADMIN_ID;
+  const SITE_URL        = (process.env.SITE_URL || 'https://aurelyscollection.com').replace(/\/$/, '');
+  const FROM_EMAIL      = process.env.FROM_EMAIL || 'noreply@aurelyscollection.com';
+  const FROM_NAME       = process.env.FROM_NAME  || 'AURELYS';
 
   if (!STRIPE_KEY) {
     return err(500, 'Variable STRIPE_SECRET_KEY manquante.');
@@ -75,6 +77,7 @@ exports.handler = async (event) => {
     guestName:     meta.guest_name        || '',
     guestPhone:    meta.guest_phone       || '',
     propertyTitle: meta.property_title    || '',
+    propertyId:    meta.property_id       || '',
     checkIn:       meta.check_in          || '',
     checkOut:      meta.check_out         || '',
     total:         session.amount_total   || 0,    // en centimes
@@ -102,11 +105,66 @@ exports.handler = async (event) => {
       );
     } catch (e) {
       console.error('[confirm-booking] Supabase update error:', e.message);
-      /* Non bloquant — on continue quand même */
+    }
+
+    /* ── 2b. Bloquer les dates dans availability_blocks ───── */
+    if (booking.propertyId && booking.checkIn && booking.checkOut) {
+      try {
+        const dates = _expandDateRange(booking.checkIn, booking.checkOut);
+        const rows  = dates.map(date => ({
+          property_id:    booking.propertyId,
+          date,
+          type:           'reservation',
+          reservation_id: refId,
+        }));
+
+        if (rows.length > 0) {
+          await fetch(`${SUPA_URL}/rest/v1/availability_blocks`, {
+            method: 'POST',
+            headers: {
+              apikey:         SUPA_KEY,
+              Authorization:  `Bearer ${SUPA_KEY}`,
+              'Content-Type': 'application/json',
+              Prefer:         'resolution=merge-duplicates',
+            },
+            body: JSON.stringify(rows),
+          });
+        }
+      } catch (e) {
+        console.error('[confirm-booking] Block dates error:', e.message);
+      }
     }
   }
 
-  /* ── 3. Email de confirmation client via Brevo ──────────── */
+  /* ── 3. Email admin via Formspree ───────────────────────── */
+  if (FORMSPREE_ID) {
+    const fmtAdmin = (n, cur) => new Intl.NumberFormat('fr-FR', {
+      style: 'currency', currency: (cur || 'EUR').toUpperCase(), minimumFractionDigits: 0
+    }).format(n / 100);
+
+    try {
+      await fetch(`https://formspree.io/f/${FORMSPREE_ID}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          _subject:        `[AURELYS] Nouvelle réservation — ${booking.propertyTitle || 'Logement'}`,
+          référence:       refId,
+          logement:        booking.propertyTitle || '—',
+          'client nom':    booking.guestName     || '—',
+          'client email':  booking.guestEmail    || '—',
+          'client tél':    booking.guestPhone    || '—',
+          arrivée:         booking.checkIn        || '—',
+          départ:          booking.checkOut       || '—',
+          'montant total': fmtAdmin(booking.total, booking.currency),
+          paiement:        'Confirmé (Stripe)',
+        }),
+      });
+    } catch (e) {
+      console.error('[confirm-booking] Formspree admin error:', e.message);
+    }
+  }
+
+  /* ── 4. Email de confirmation client via Brevo ──────────── */
   if (BREVO_KEY && booking.guestEmail) {
     const fmt = (n, cur) => new Intl.NumberFormat('fr-FR', {
       style: 'currency', currency: (cur || 'EUR').toUpperCase(), minimumFractionDigits: 0
@@ -255,4 +313,16 @@ function _esc(str) {
   return String(str ?? '')
     .replace(/&/g, '&amp;').replace(/</g, '&lt;')
     .replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+}
+
+function _expandDateRange(checkIn, checkOut) {
+  const dates = [];
+  const start = new Date(checkIn);
+  const end   = new Date(checkOut);
+  const cur   = new Date(start);
+  while (cur < end) {
+    dates.push(cur.toISOString().slice(0, 10));
+    cur.setUTCDate(cur.getUTCDate() + 1);
+  }
+  return dates;
 }

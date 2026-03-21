@@ -723,9 +723,6 @@ function initBookingModal(propertyId) {
     /* Sauvegarder la reservation */
     _saveReservation(reservation);
 
-    /* Bloquer les dates immediatement */
-    blockDatesAfterPayment(propertyId, calendar.checkIn, calendar.checkOut);
-
     /* Paiement dynamique via Stripe Checkout */
     _redirectToStripeCheckout(overlay, reservation, calculator, totals);
   });
@@ -843,6 +840,7 @@ async function _redirectToStripeCheckout(overlay, reservation, calculator, total
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({
         reservationId: reservation.id,
+        propertyId:    reservation.propertyId,
         propertyTitle: reservation.propertyTitle,
         pricing: {
           subtotal:    totals.subtotal,

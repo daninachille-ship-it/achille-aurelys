@@ -443,6 +443,54 @@ const AureDB = (() => {
     if (error) throw error;
   }
 
+  /* Bloquer les dates d'une réservation confirmée (exposition publique) */
+  async function blockReservationDates(propertyId, checkIn, checkOut, reservationId) {
+    return _blockReservationDates(propertyId, checkIn, checkOut, reservationId);
+  }
+
+  /* Définir le logement mis en avant (un seul à la fois) */
+  async function setFeaturedProperty(id) {
+    const client = _getClient();
+    if (!client) throw new Error('Supabase non configuré');
+
+    // Retirer le featured de tous les autres
+    const { error: e1 } = await client
+      .from('properties')
+      .update({ featured: false })
+      .neq('id', id);
+    if (e1) throw e1;
+
+    // Activer le featured sur celui-ci
+    const { error: e2 } = await client
+      .from('properties')
+      .update({ featured: true })
+      .eq('id', id);
+    if (e2) throw e2;
+  }
+
+  /* Annuler automatiquement les réservations pending trop anciennes */
+  async function expirePendingReservations(hoursOld = 2) {
+    const client = _getClient();
+    if (!client) return;
+
+    const cutoff = new Date(Date.now() - hoursOld * 60 * 60 * 1000).toISOString();
+    const { data: expired } = await client
+      .from('reservations')
+      .select('id')
+      .eq('status', 'pending')
+      .lt('created_at', cutoff);
+
+    if (!expired || expired.length === 0) return;
+
+    // Annuler chaque réservation expirée (les dates ne sont jamais bloquées pour les pending)
+    for (const r of expired) {
+      await client
+        .from('reservations')
+        .update({ status: 'cancelled' })
+        .eq('id', r.id);
+    }
+  }
+
   async function _blockReservationDates(propertyId, checkIn, checkOut, reservationId) {
     if (!propertyId || !checkIn || !checkOut) return;
     const client = _getClient();
@@ -939,6 +987,7 @@ const AureDB = (() => {
 
     // Disponibilité
     getAvailabilityBlocks, createAvailabilityBlock, deleteAvailabilityBlock,
+    blockReservationDates, setFeaturedProperty, expirePendingReservations,
 
     // Newsletter
     getSubscribers, addSubscriber, deleteSubscriber,

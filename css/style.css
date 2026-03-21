@@ -206,6 +206,7 @@ input, textarea, select {
    4. HERO — Plein écran cinématique
 ───────────────────────────────────────────────────────────── */
 
+/* Background directement sur la section — le plus fiable sur iOS Safari */
 .hero {
   position: relative;
   height: 100svh;
@@ -214,19 +215,15 @@ input, textarea, select {
   align-items: center;
   justify-content: center;
   overflow: hidden;
-}
-
-/* Image de fond — background-image CSS (iOS Safari compatible) */
-.hero-bg-media {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  z-index: 0;
   background-size: cover;
   background-position: center 40%;
   background-repeat: no-repeat;
+  background-color: #040714; /* fallback si image pas chargée */
 }
 
-.hero-bg-overlay {
+/* Overlay gradient via ::before */
+.hero::before {
+  content: '';
   position: absolute;
   top: 0; left: 0; right: 0; bottom: 0;
   background: linear-gradient(
@@ -235,13 +232,14 @@ input, textarea, select {
     rgba(12, 8, 5, 0.48) 45%,
     rgba(4, 7, 20, 0.72) 100%
   );
+  z-index: 1;
 }
 
 /* Grain texture */
 .hero-grain {
   position: absolute;
   inset: 0;
-  z-index: 1;
+  z-index: 2;
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.035'/%3E%3C/svg%3E");
   opacity: 0.45;
   pointer-events: none;
@@ -1016,7 +1014,7 @@ input, textarea, select {
 .editorial-img {
   width: 100%;
   border-radius: var(--radius-lg);
-  aspect-ratio: 4 / 5;
+  aspect-ratio: 3 / 4; /* portrait — toutes tailles */
   object-fit: cover;
   display: block;
   transition: transform 0.6s var(--ease-default);
@@ -2007,8 +2005,7 @@ a.contact-detail-value:hover { color: var(--color-accent); }
   }
 
   .editorial-img {
-    aspect-ratio: 3 / 4;
-    max-height: 520px;
+    max-height: 480px;
     margin: 0 auto;
   }
 
@@ -2143,8 +2140,16 @@ a.contact-detail-value:hover { color: var(--color-accent); }
   .map-side-panel {
     border-left: none;
     border-top: 1px solid var(--color-border);
-    max-height: 300px;
+    max-height: 340px;
+    overflow: hidden;
+  }
+
+  .map-panel-list {
+    display: block;
+    max-height: 280px;
     overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
   }
 }
 
@@ -2534,14 +2539,16 @@ a.contact-detail-value:hover { color: var(--color-accent); }
   .map-side-panel {
     border-left: none;
     border-top: 1px solid var(--color-border);
-    max-height: 320px;
-    overflow-y: auto;
+    max-height: 340px;
+    overflow: hidden;
   }
 
   .map-panel-list {
     display: block;
-    overflow-x: unset;
-    overflow-y: unset;
+    max-height: 280px;
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
   }
 
   .map-property-item {

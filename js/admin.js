@@ -32,9 +32,11 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 async function _checkSession() {
+  // Sécurité : on vérifie AUSSI la clé sessionStorage.
+  // sessionStorage est vidé à chaque fermeture d'onglet → login requis à chaque nouvelle ouverture.
   try {
     const session = await AureDB.getSession();
-    if (session) _showAdminApp();
+    if (session && sessionStorage.getItem('aurelys_admin_auth')) _showAdminApp();
   } catch { /* pas de session — afficher le formulaire */ }
 }
 
@@ -62,6 +64,7 @@ async function handleLogin(e) {
       throw new Error('Supabase non configur\u00e9. Remplissez js/config.js avec vos identifiants.');
     }
     await AureDB.signIn(email, password);
+    sessionStorage.setItem('aurelys_admin_auth', '1');
     _showAdminApp();
   } catch (err) {
     const msg = err.message && err.message.includes('Invalid login')
@@ -76,6 +79,7 @@ async function handleLogin(e) {
 
 async function logout() {
   await AureDB.signOut();
+  sessionStorage.removeItem('aurelys_admin_auth');
   document.getElementById('admin-app').style.display   = 'none';
   document.getElementById('admin-login').style.display = 'flex';
   const pwdEl = document.getElementById('admin-password');

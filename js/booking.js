@@ -551,7 +551,7 @@ function initBookingModal(propertyId) {
     <div class="modal" id="booking-modal-card">
       <!-- En-tete -->
       <div class="modal-header">
-        <h2 class="modal-title" id="booking-modal-title">Reserver ce logement</h2>
+        <h2 class="modal-title" id="booking-modal-title">Réserver ce logement</h2>
         <button class="modal-close" id="booking-modal-close" type="button" aria-label="Fermer">&times;</button>
       </div>
 

@@ -216,28 +216,23 @@ input, textarea, select {
   overflow: hidden;
 }
 
-/* Image de fond */
+/* Image de fond — background-image CSS (iOS Safari compatible) */
 .hero-bg-media {
-  position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-}
-
-.hero-bg-img {
   position: absolute;
   top: 0; left: 0;
   width: 100%;
   height: 100%;
-  object-fit: cover;
-  object-position: center 40%;
-  display: block;
+  z-index: 0;
+  background-size: cover;
+  background-position: center 40%;
+  background-repeat: no-repeat;
 }
 
 .hero-bg-overlay {
   position: absolute;
-  top: 0; left: 0; right: 0; bottom: 0;
+  top: 0; left: 0;
+  width: 100%;
+  height: 100%;
   background: linear-gradient(
     160deg,
     rgba(4, 7, 20, 0.65) 0%,

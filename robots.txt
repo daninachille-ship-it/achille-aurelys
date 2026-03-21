@@ -1,0 +1,7 @@
+User-agent: *
+Allow: /
+Disallow: /admin.html
+Disallow: /.netlify/
+Disallow: /confirmation.html
+
+Sitemap: https://aurelyscollection.com/sitemap.xml

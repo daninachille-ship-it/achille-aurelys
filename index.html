@@ -3,11 +3,51 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AURELYS — Intemporel par choix.</title>
-  <meta name="description" content="Collection de résidences d'exception. Hébergements courte durée sélectionnés pour ceux qui refusent de choisir entre le confort et l'élégance.">
-  <meta property="og:title" content="AURELYS — Intemporel par choix.">
-  <meta property="og:description" content="Collection de résidences d'exception. Hébergements courte durée.">
-  <meta property="og:type" content="website">
+
+  <!-- ── SEO Principal ──────────────────────────────────────── -->
+  <title>AURELYS — Hébergements de Prestige | Intemporel par choix.</title>
+  <meta name="description" content="AURELYS : collection exclusive de résidences d'exception en courte durée. Appartements et maisons de prestige sélectionnés pour une expérience intemporelle.">
+  <meta name="robots" content="index, follow">
+  <meta name="author" content="AURELYS">
+  <link rel="canonical" href="https://aurelyscollection.com/">
+
+  <!-- ── Open Graph (Facebook, LinkedIn…) ──────────────────── -->
+  <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://aurelyscollection.com/">
+  <meta property="og:title"       content="AURELYS — Hébergements de Prestige">
+  <meta property="og:description" content="Collection exclusive de résidences d'exception. Hébergements courte durée sélectionnés pour ceux qui refusent de choisir entre le confort et l'élégance.">
+  <meta property="og:image"       content="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200&q=85">
+  <meta property="og:image:width"  content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale"      content="fr_FR">
+  <meta property="og:site_name"   content="AURELYS">
+
+  <!-- ── Twitter Card ──────────────────────────────────────── -->
+  <meta name="twitter:card"        content="summary_large_image">
+  <meta name="twitter:title"       content="AURELYS — Hébergements de Prestige">
+  <meta name="twitter:description" content="Collection exclusive de résidences d'exception en courte durée.">
+  <meta name="twitter:image"       content="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200&q=85">
+
+  <!-- ── Structured Data (JSON-LD) ─────────────────────────── -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "LodgingBusiness",
+    "name": "AURELYS",
+    "description": "Collection exclusive de résidences d'exception en hébergement courte durée.",
+    "url": "https://aurelyscollection.com",
+    "logo": "https://aurelyscollection.com/favicon.ico",
+    "image": "https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1200&q=85",
+    "priceRange": "€€€",
+    "telephone": "",
+    "email": "",
+    "address": {
+      "@type": "PostalAddress",
+      "addressCountry": "FR"
+    },
+    "sameAs": []
+  }
+  </script>
 
   <!-- Leaflet -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" crossorigin="">
@@ -51,15 +91,11 @@
 <section class="hero" aria-label="Accueil">
 
   <!-- Image de fond plein écran -->
-  <div class="hero-bg-media">
-    <img
-      id="hero-main-img"
-      class="hero-bg-img"
-      src="https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1920&q=90"
-      alt="Résidence AURELYS"
-      loading="eager"
-      fetchpriority="high"
-    >
+  <div class="hero-bg-media"
+       id="hero-main-img"
+       role="img"
+       aria-label="Résidence AURELYS"
+       style="background-image:url('https://images.unsplash.com/photo-1512917774080-9991f1c4c750?w=1920&q=90')">
     <div class="hero-bg-overlay"></div>
   </div>
 

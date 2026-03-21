@@ -1049,19 +1049,7 @@ function _renderReservations() {
 
 async function confirmReservation(id) {
   try {
-    const reservation = _reservations.find(r => r.id === id);
-    await AureDB.updateReservationStatus(id, 'confirmed');
-
-    // Bloquer les dates dès la confirmation manuelle
-    if (reservation && reservation.property_id && reservation.check_in && reservation.check_out) {
-      await AureDB.blockReservationDates(
-        reservation.property_id,
-        reservation.check_in,
-        reservation.check_out,
-        id
-      );
-    }
-
+    await AureDB.updateReservationStatus(id, 'confirmed'); // bloque les dates automatiquement
     await _refreshPanel('reservations');
     showToast('R\u00e9servation confirm\u00e9e. Dates bloqu\u00e9es.');
   } catch (err) { showToast('Erreur : ' + err.message, 'error'); }

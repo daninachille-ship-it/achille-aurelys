@@ -1112,6 +1112,16 @@ async function unblockDate(propId, date) {
   } catch (err) { showToast('Erreur : ' + err.message, 'error'); }
 }
 
+async function syncAvailability() {
+  try {
+    showToast('Synchronisation en cours…');
+    const { freed, blocked } = await AureDB.syncAvailability();
+    const propId = _getField('avail-property-select');
+    if (propId) await loadAvailabilityForProperty(propId);
+    showToast(`Synchronisation terminée — ${freed} date(s) libérée(s), ${blocked} date(s) bloquée(s).`);
+  } catch (err) { showToast('Erreur : ' + err.message, 'error'); }
+}
+
 /* ── Paramètres ─────────────────────────────────────────────── */
 function _renderSettings() {
   const configured = AureDB.isConfigured();

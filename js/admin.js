@@ -87,8 +87,16 @@ async function _showAdminApp() {
   document.getElementById('admin-login').style.display = 'none';
   document.getElementById('admin-app').style.display   = 'flex';
   document.getElementById('admin-app').classList.add('visible');
+
+  // Afficher immédiatement les données du cache (iPad/desktop → iPhone bénéficie du cache)
+  const hadCache = _loadCache();
+  loadPanel('dashboard');  // rendu immédiat avec cache ou état vide
+
+  // Puis charger les données fraîches depuis Supabase en arrière-plan
   await _loadAllData();
-  loadPanel('dashboard');
+
+  // Re-rendre si le panel est toujours actif
+  _renderPanel(_currentPanel);
   _setupAdminRealtime();
 }
 
@@ -110,6 +118,42 @@ function _setupAdminRealtime() {
       if (propId) loadAvailabilityForProperty(propId);
     }
   });
+}
+
+/* ── Cache localStorage ─────────────────────────────────────── */
+const _CACHE_KEY = 'aurelys_admin_cache_v1';
+
+function _saveCache() {
+  try {
+    localStorage.setItem(_CACHE_KEY, JSON.stringify({
+      ts:           Date.now(),
+      properties:   _properties,
+      upcoming:     _upcoming,
+      settings:     _settings,
+      subscribers:  _subscribers,
+      reservations: _reservations,
+      legalPages:   _legalPages,
+      faqItems:     _faqItems
+    }));
+  } catch (_) {}
+}
+
+function _loadCache() {
+  try {
+    const raw = localStorage.getItem(_CACHE_KEY);
+    if (!raw) return false;
+    const c = JSON.parse(raw);
+    // Cache valide 30 min — au-delà on laisse Supabase prendre le dessus
+    if (Date.now() - c.ts > 30 * 60 * 1000) return false;
+    if (c.properties)   _properties   = c.properties;
+    if (c.upcoming)     _upcoming     = c.upcoming;
+    if (c.settings)     _settings     = c.settings;
+    if (c.subscribers)  _subscribers  = c.subscribers;
+    if (c.reservations) _reservations = c.reservations;
+    if (c.legalPages)   _legalPages   = c.legalPages;
+    if (c.faqItems)     _faqItems     = c.faqItems;
+    return true;
+  } catch (_) { return false; }
 }
 
 async function _loadAllData() {
@@ -134,18 +178,23 @@ async function _loadAllData() {
   ]);
 
   // N'écraser que si la requête a abouti (null = timeout)
-  if (props    !== null) _properties   = props;
-  if (upcoming !== null) _upcoming     = upcoming;
-  if (subs     !== null) _subscribers  = subs;
-  if (res      !== null) _reservations = res;
-  if (legal    !== null) _legalPages   = legal;
-  if (faq      !== null) _faqItems     = faq;
+  let gotFreshData = false;
+  if (props    !== null) { _properties   = props;    gotFreshData = true; }
+  if (upcoming !== null) { _upcoming     = upcoming; gotFreshData = true; }
+  if (subs     !== null)   _subscribers  = subs;
+  if (res      !== null)   _reservations = res;
+  if (legal    !== null)   _legalPages   = legal;
+  if (faq      !== null)   _faqItems     = faq;
 
   if (settings !== null) {
-    _settings = settings;
+    _settings    = settings;
+    gotFreshData = true;
   } else if (!_settings) {
     showToast('Impossible de charger les paramètres. Vérifiez la connexion.', 'error');
   }
+
+  // Persister en cache dès que Supabase a répondu
+  if (gotFreshData) _saveCache();
 }
 
 /* ── Navigation ─────────────────────────────────────────────── */

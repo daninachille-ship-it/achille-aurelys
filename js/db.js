@@ -402,12 +402,25 @@ const AureDB = (() => {
 
     if (error) throw error;
 
-    // Libérer les dates si la réservation est annulée
+    // Libérer les dates si la réservation est annulée (quel que soit payment_status)
     if (status === 'cancelled') {
       await client
         .from('availability_blocks')
         .delete()
         .eq('reservation_id', id);
+    }
+
+    // Bloquer les dates si la réservation est confirmée
+    if (status === 'confirmed') {
+      const { data: res } = await client
+        .from('reservations')
+        .select('property_id, check_in, check_out')
+        .eq('id', id)
+        .single();
+
+      if (res && res.property_id && res.check_in && res.check_out) {
+        await _blockReservationDates(res.property_id, res.check_in, res.check_out, id);
+      }
     }
   }
 

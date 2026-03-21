@@ -17,7 +17,8 @@ const AureDB = (() => {
      CLIENT SUPABASE
      ================================================================ */
 
-  let _client = null;
+  let _client     = null;  // client authentifié (admin, écritures)
+  let _anonClient = null;  // client anonyme (lectures publiques — fonctionne sur mobile même sans session)
 
   function _getClient() {
     if (_client) return _client;
@@ -44,6 +45,25 @@ const AureDB = (() => {
     });
 
     return _client;
+  }
+
+  /* Client sans session — utilisé pour les lectures publiques.
+     Évite le blocage lié au refresh du token d'auth sur réseau mobile. */
+  function _getAnonClient() {
+    if (_anonClient) return _anonClient;
+
+    const cfg = window.AURELYS_CONFIG || {};
+    if (!cfg.supabaseUrl || !cfg.supabaseAnonKey || !window.supabase) return null;
+
+    _anonClient = window.supabase.createClient(cfg.supabaseUrl, cfg.supabaseAnonKey, {
+      auth: {
+        autoRefreshToken:   false,
+        persistSession:     false,
+        detectSessionInUrl: false
+      }
+    });
+
+    return _anonClient;
   }
 
   function isConfigured() {
@@ -94,7 +114,7 @@ const AureDB = (() => {
      ================================================================ */
 
   async function getProperties() {
-    const client = _getClient();
+    const client = _getAnonClient() || _getClient();
     if (!client) return _defaults.properties();
 
     const { data, error } = await client
@@ -174,7 +194,7 @@ const AureDB = (() => {
      ================================================================ */
 
   async function getUpcomingProperties() {
-    const client = _getClient();
+    const client = _getAnonClient() || _getClient();
     if (!client) return _defaults.upcoming();
 
     const { data, error } = await client
@@ -219,7 +239,7 @@ const AureDB = (() => {
      ================================================================ */
 
   async function getSettings() {
-    const client = _getClient();
+    const client = _getAnonClient() || _getClient();
     if (!client) return _defaults.settings();
 
     const { data, error } = await client
@@ -249,7 +269,7 @@ const AureDB = (() => {
      ================================================================ */
 
   async function getLegalPages() {
-    const client = _getClient();
+    const client = _getAnonClient() || _getClient();
     if (!client) return _defaults.legalPages();
 
     const { data, error } = await client.from('legal_pages').select('*');
@@ -280,7 +300,7 @@ const AureDB = (() => {
      ================================================================ */
 
   async function getFaqItems() {
-    const client = _getClient();
+    const client = _getAnonClient() || _getClient();
     if (!client) return _defaults.faq();
 
     const { data, error } = await client

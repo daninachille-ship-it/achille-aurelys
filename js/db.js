@@ -502,46 +502,42 @@ const AureDB = (() => {
   }
 
   /* Synchroniser availability_blocks avec l'état réel des réservations
-     - Supprime les blocs orphelins liés à des réservations annulées
-     - Bloque les dates manquantes pour les réservations confirmées
+     - Supprime TOUS les blocs de type 'reservation' (y compris orphelins)
+     - Recrée uniquement les blocs pour les réservations confirmées
      Retourne { freed, blocked } */
   async function syncAvailability() {
     const client = _getClient();
     if (!client) throw new Error('Supabase non configuré');
 
-    const { data: reservations } = await client
+    // 1. Supprimer TOUS les blocs de type 'reservation' sans exception
+    const { data: allDeleted } = await client
+      .from('availability_blocks')
+      .delete()
+      .eq('type', 'reservation')
+      .select('id');
+    const freed = (allDeleted || []).length;
+
+    // 2. Reconstruire uniquement depuis les réservations confirmées
+    const { data: confirmed } = await client
       .from('reservations')
-      .select('id, status, property_id, check_in, check_out');
+      .select('id, property_id, check_in, check_out')
+      .eq('status', 'confirmed');
 
-    if (!reservations) return { freed: 0, blocked: 0 };
-
-    let freed = 0;
     let blocked = 0;
-
-    for (const r of reservations) {
-      if (r.status === 'cancelled') {
-        // Supprimer tous les blocs liés à cette réservation annulée
-        const { data: deleted } = await client
+    for (const r of (confirmed || [])) {
+      if (!r.property_id || !r.check_in || !r.check_out) continue;
+      const dates = _expandDateRange(r.check_in, r.check_out);
+      const rows = dates.map(date => ({
+        property_id:    r.property_id,
+        date,
+        type:           'reservation',
+        reservation_id: r.id,
+      }));
+      if (rows.length > 0) {
+        await client
           .from('availability_blocks')
-          .delete()
-          .eq('reservation_id', r.id)
-          .select('id');
-        freed += (deleted || []).length;
-      } else if (r.status === 'confirmed' && r.property_id && r.check_in && r.check_out) {
-        // S'assurer que les dates sont bien bloquées
-        const dates = _expandDateRange(r.check_in, r.check_out);
-        const rows = dates.map(date => ({
-          property_id:    r.property_id,
-          date,
-          type:           'reservation',
-          reservation_id: r.id,
-        }));
-        if (rows.length > 0) {
-          await client
-            .from('availability_blocks')
-            .upsert(rows, { onConflict: 'property_id,date' });
-          blocked += rows.length;
-        }
+          .upsert(rows, { onConflict: 'property_id,date' });
+        blocked += rows.length;
       }
     }
 

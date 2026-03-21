@@ -10,35 +10,44 @@ document.addEventListener('DOMContentLoaded', async () => {
 
   _showPageLoader(true);
 
+  // Initialisation immédiate de l'UI sans attendre Supabase (mobile / réseau lent)
+  initNav();
+  initFadeIn();
+  initParallax();
+  applyContent({});   // applique les valeurs par défaut tout de suite
+
+  // Timeout individuel par requête : évite qu'une requête bloquée suspende toute la page
+  const _t = p => Promise.race([
+    p,
+    new Promise(resolve => setTimeout(() => resolve(null), 15000))
+  ]);
+
   try {
     const [properties, upcoming, settings, faqItems, blockedDatesMap] = await Promise.all([
-      AureDB.getProperties(),
-      AureDB.getUpcomingProperties(),
-      AureDB.getSettings(),
-      AureDB.getFaqItems(),
-      _loadAllBlockedDates()
+      _t(AureDB.getProperties()),
+      _t(AureDB.getUpcomingProperties()),
+      _t(AureDB.getSettings()),
+      _t(AureDB.getFaqItems()),
+      _t(_loadAllBlockedDates())
     ]);
 
     /* Alimenter les caches globaux pour booking.js (accès synchrone) */
-    _hydrateCache(properties, blockedDatesMap);
+    _hydrateCache(properties || [], blockedDatesMap || {});
 
-    /* Contenu et rendu */
-    applyContent(settings);
+    /* Contenu et rendu avec les données réelles depuis Supabase */
+    applyContent(settings || {});
     _updateHeroCard();
-    renderProperties(properties);
-    renderUpcoming(upcoming);
-    renderStats(settings.home && settings.home.stats);
-    renderFaq(faqItems);
+    renderProperties(properties || []);
+    renderUpcoming(upcoming || []);
+    renderStats(settings && settings.home && settings.home.stats);
+    renderFaq(faqItems || []);
 
     /* Carte Leaflet */
-    AureMap.init(properties);
+    AureMap.init(properties || []);
 
-    /* UI */
-    initNav();
+    /* UI complémentaire nécessitant les settings */
     initNewsletter();
-    initContactForm((settings.global || {}).globalFormspreeId);
-    initFadeIn();
-    initParallax();
+    initContactForm(settings && settings.global ? settings.global.globalFormspreeId : '');
 
     /* Realtime Supabase — synchronisation automatique cross-navigateur */
     if (AureDB.isConfigured()) {

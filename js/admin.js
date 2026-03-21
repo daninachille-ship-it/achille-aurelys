@@ -116,36 +116,35 @@ async function _loadAllData() {
   // Expirer les réservations pending non payées (> 2h)
   AureDB.expirePendingReservations(2).catch(() => {});
 
-  // Avertissement progressif si la connexion est lente (mobile)
-  const slowTimer = setTimeout(() => {
-    if (!_settings) showToast('Connexion lente — chargement en cours…', 'error');
-  }, 8000);
-
-  // Promise.allSettled : chaque requête est indépendante — une erreur n'en bloque pas les autres
-  const [propsR, upcomingR, settingsR, subsR, resR, legalR, faqR] = await Promise.allSettled([
-    AureDB.getProperties(),
-    AureDB.getUpcomingProperties(),
-    AureDB.getSettings(),
-    AureDB.getSubscribers(),
-    AureDB.getReservations(),
-    AureDB.getLegalPages(),
-    AureDB.getFaqItems()
+  // Timeout individuel par requête : évite qu'une requête bloquée suspende tout le panel
+  // (cas fréquent sur mobile avec réseau instable)
+  const _t = p => Promise.race([
+    p,
+    new Promise(resolve => setTimeout(() => resolve(null), 15000))
   ]);
 
-  clearTimeout(slowTimer);
+  const [props, upcoming, settings, subs, res, legal, faq] = await Promise.all([
+    _t(AureDB.getProperties()),
+    _t(AureDB.getUpcomingProperties()),
+    _t(AureDB.getSettings()),
+    _t(AureDB.getSubscribers()),
+    _t(AureDB.getReservations()),
+    _t(AureDB.getLegalPages()),
+    _t(AureDB.getFaqItems())
+  ]);
 
-  if (propsR.status    === 'fulfilled') _properties   = propsR.value;
-  if (upcomingR.status === 'fulfilled') _upcoming     = upcomingR.value;
-  if (subsR.status     === 'fulfilled') _subscribers  = subsR.value;
-  if (resR.status      === 'fulfilled') _reservations = resR.value;
-  if (legalR.status    === 'fulfilled') _legalPages   = legalR.value;
-  if (faqR.status      === 'fulfilled') _faqItems     = faqR.value;
+  // N'écraser que si la requête a abouti (null = timeout)
+  if (props    !== null) _properties   = props;
+  if (upcoming !== null) _upcoming     = upcoming;
+  if (subs     !== null) _subscribers  = subs;
+  if (res      !== null) _reservations = res;
+  if (legal    !== null) _legalPages   = legal;
+  if (faq      !== null) _faqItems     = faq;
 
-  if (settingsR.status === 'fulfilled') {
-    _settings = settingsR.value;
-  } else {
-    console.error('[Admin] Erreur chargement settings :', settingsR.reason);
-    if (!_settings) showToast('Impossible de charger les paramètres. Vérifiez la connexion.', 'error');
+  if (settings !== null) {
+    _settings = settings;
+  } else if (!_settings) {
+    showToast('Impossible de charger les paramètres. Vérifiez la connexion.', 'error');
   }
 }
 
@@ -185,9 +184,8 @@ function loadPanel(name) {
   }
 }
 
-async function _refreshPanel(name) {
-  await _loadAllData();
-  _renderDashboard(); // toujours mettre à jour les stats
+function _renderPanel(name) {
+  _renderDashboard();
   switch (name) {
     case 'dashboard':    _renderDashboard();    break;
     case 'properties':   _renderProperties();   break;
@@ -202,6 +200,17 @@ async function _refreshPanel(name) {
     case 'availability': _renderAvailability(); break;
     case 'settings':     _renderSettings();     break;
   }
+}
+
+async function _refreshPanel(name) {
+  // 1. Rendre immédiatement avec les données déjà en mémoire (évite l'écran vide sur mobile)
+  _renderPanel(name);
+
+  // 2. Charger les données fraîches depuis Supabase (chaque requête a un timeout de 15 s)
+  await _loadAllData();
+
+  // 3. Re-rendre avec les données mises à jour (si le panel est toujours actif)
+  if (_currentPanel === name) _renderPanel(name);
 }
 
 /* ── Dashboard ──────────────────────────────────────────────── */

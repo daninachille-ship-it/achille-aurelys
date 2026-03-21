@@ -59,7 +59,7 @@ exports.handler = async (event) => {
     return { statusCode: 400, headers: _corsHeaders(), body: JSON.stringify({ error: 'JSON invalide.' }) };
   }
 
-  const { reservationId, propertyId, propertyTitle, pricing, guest, dates } = payload;
+  const { reservationId, propertyId, propertyTitle, pricing, guest, dates, message, guests } = payload;
 
   if (!reservationId || !pricing || !guest || !dates) {
     return {
@@ -107,6 +107,7 @@ exports.handler = async (event) => {
   params.set('metadata[check_out]',      dates.checkOut);
   params.set('metadata[guest_name]',     guest.name);
   if (guest.phone) params.set('metadata[guest_phone]', guest.phone);
+  if (message)    params.set('metadata[guest_message]', String(message).slice(0, 500));
 
   /* URLs de redirection */
   params.set('success_url',
@@ -137,6 +138,44 @@ exports.handler = async (event) => {
       };
     }
 
+    /* Sauvegarder la réservation dans Supabase (serveur-side, bypasse RLS) */
+    const SUPA_URL = process.env.SUPABASE_URL;
+    const SUPA_KEY = process.env.SUPABASE_SERVICE_KEY;
+    if (SUPA_URL && SUPA_KEY && reservationId) {
+      try {
+        await fetch(`${SUPA_URL}/rest/v1/reservations`, {
+          method: 'POST',
+          headers: {
+            apikey:          SUPA_KEY,
+            Authorization:   `Bearer ${SUPA_KEY}`,
+            'Content-Type':  'application/json',
+            Prefer:          'resolution=merge-duplicates,return=minimal',
+          },
+          body: JSON.stringify({
+            id:             reservationId,
+            property_id:    propertyId    || '',
+            property_title: propertyTitle || '',
+            guest_name:     guest.name    || '',
+            guest_email:    guest.email   || '',
+            guest_phone:    guest.phone   || '',
+            check_in:       dates.checkIn,
+            check_out:      dates.checkOut,
+            guests:         guests        || 1,
+            nights:         dates.nights  || 1,
+            total_price:    pricing.total || 0,
+            cleaning_fee:   pricing.cleaningFee || 0,
+            currency:       (pricing.currency || 'EUR').toUpperCase(),
+            status:         'pending',
+            payment_status: 'unpaid',
+            message:        message       || '',
+            created_at:     new Date().toISOString(),
+          }),
+        });
+      } catch (e) {
+        console.error('[create-checkout] Supabase insert error:', e.message);
+      }
+    }
+
     /* Notifier l'admin via Formspree dès qu'un client initie un paiement */
     if (FORMSPREE_ID && guest && dates) {
       const cur      = (pricing.currency || 'EUR').toUpperCase();
@@ -144,22 +183,24 @@ exports.handler = async (event) => {
         style: 'currency', currency: cur, minimumFractionDigits: 0
       }).format(pricing.total || 0);
       try {
+        const fpBody = {
+          email:       guest.email  || '',   // champ requis par Formspree
+          _replyto:    guest.email  || '',
+          _subject:    `[AURELYS] Demande reservation - ${propertyTitle || 'Logement'}`,
+          reference:   reservationId || '',
+          logement:    propertyTitle || '',
+          client_nom:  guest.name   || '',
+          client_tel:  guest.phone  || '',
+          arrivee:     dates.checkIn  || '',
+          depart:      dates.checkOut || '',
+          montant:     totalFmt,
+          statut:      'En attente de paiement Stripe',
+        };
+        if (message) fpBody.message_client = message;
         const fpRes = await fetch(`https://formspree.io/f/${FORMSPREE_ID}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
-          body: JSON.stringify({
-            email:       guest.email  || '',   // champ requis par Formspree
-            _replyto:    guest.email  || '',
-            _subject:    `[AURELYS] Demande reservation - ${propertyTitle || 'Logement'}`,
-            reference:   reservationId || '',
-            logement:    propertyTitle || '',
-            client_nom:  guest.name   || '',
-            client_tel:  guest.phone  || '',
-            arrivee:     dates.checkIn  || '',
-            depart:      dates.checkOut || '',
-            montant:     totalFmt,
-            statut:      'En attente de paiement Stripe',
-          }),
+          body: JSON.stringify(fpBody),
         });
         if (!fpRes.ok) {
           const fpData = await fpRes.json().catch(() => ({}));

@@ -850,8 +850,10 @@ async function _redirectToStripeCheckout(overlay, reservation, calculator, total
           perNight:    totals.pricePerNight,
           nights:      totals.nights,
         },
-        guest: reservation.guest,
-        dates: reservation.dates,
+        guest:   reservation.guest,
+        dates:   reservation.dates,
+        guests:  reservation.guests,
+        message: reservation.message || '',
       }),
     });
 

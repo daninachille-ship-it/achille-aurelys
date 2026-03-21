@@ -76,6 +76,7 @@ exports.handler = async (event) => {
     guestEmail:    session.customer_email || '',
     guestName:     meta.guest_name        || '',
     guestPhone:    meta.guest_phone       || '',
+    guestMessage:  meta.guest_message     || '',
     propertyTitle: meta.property_title    || '',
     propertyId:    meta.property_id       || '',
     checkIn:       meta.check_in          || '',
@@ -147,17 +148,18 @@ exports.handler = async (event) => {
         method: 'POST',
         headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
         body: JSON.stringify({
-          email:       booking.guestEmail || '',   // champ requis par Formspree
-          _replyto:    booking.guestEmail || '',
-          _subject:    `[AURELYS] Reservation confirmee - ${booking.propertyTitle || 'Logement'}`,
-          reference:   refId              || '',
-          logement:    booking.propertyTitle || '',
-          client_nom:  booking.guestName    || '',
-          client_tel:  booking.guestPhone   || '',
-          arrivee:     booking.checkIn      || '',
-          depart:      booking.checkOut     || '',
-          montant:     fmtAdmin(booking.total, booking.currency),
-          paiement:    'Confirme Stripe',
+          email:          booking.guestEmail || '',   // champ requis par Formspree
+          _replyto:       booking.guestEmail || '',
+          _subject:       `[AURELYS] Reservation confirmee - ${booking.propertyTitle || 'Logement'}`,
+          reference:      refId              || '',
+          logement:       booking.propertyTitle || '',
+          client_nom:     booking.guestName    || '',
+          client_tel:     booking.guestPhone   || '',
+          arrivee:        booking.checkIn      || '',
+          depart:         booking.checkOut     || '',
+          montant:        fmtAdmin(booking.total, booking.currency),
+          paiement:       'Confirme Stripe',
+          ...(booking.guestMessage ? { message_client: booking.guestMessage } : {}),
         }),
       });
       if (!fpRes.ok) {
@@ -192,7 +194,7 @@ exports.handler = async (event) => {
 
   <!-- Icône confirmation -->
   <tr><td style="padding:40px 40px 0;text-align:center;">
-    <div style="width:56px;height:56px;border-radius:50%;background:rgba(200,185,154,.12);border:1px solid #c8b99a;display:inline-flex;align-items:center;justify-content:center;font-size:22px;color:#c8b99a;margin-bottom:20px;">✓</div>
+    <div style="width:56px;height:56px;border-radius:50%;background:rgba(200,185,154,.12);border:1px solid #c8b99a;display:inline-block;vertical-align:middle;margin-bottom:20px;line-height:56px;text-align:center;"><svg xmlns="http://www.w3.org/2000/svg" width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#c8b99a" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;display:inline-block;"><polyline points="20 6 9 17 4 12"></polyline></svg></div>
     <h1 style="margin:0 0 12px;font-size:26px;font-weight:300;color:#e8e4de;letter-spacing:.02em;font-family:Georgia,serif;">Réservation confirmée</h1>
     <p style="margin:0;font-size:14px;color:#6b7280;line-height:1.7;">
       Bonjour ${_esc(booking.guestName || 'cher voyageur')},<br>

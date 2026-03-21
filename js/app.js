@@ -24,6 +24,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 
     /* Contenu et rendu */
     applyContent(settings);
+    _updateHeroCard();
     renderProperties(properties);
     renderUpcoming(upcoming);
     renderStats(settings.home && settings.home.stats);
@@ -90,6 +91,7 @@ function _setupRealtime() {
   AureDB.subscribeToChanges('properties', async () => {
     const props = await AureDB.getProperties();
     _hydrateCache(props, window._aureBlockedDates);
+    _updateHeroCard();
     renderProperties(props);
     AureMap.update(props);
   });

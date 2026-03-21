@@ -40,7 +40,8 @@ exports.handler = async (event) => {
   }
 
   /* ── Variables d'environnement ─────────────────────────── */
-  const STRIPE_KEY = process.env.STRIPE_SECRET_KEY;
+  const STRIPE_KEY      = process.env.STRIPE_SECRET_KEY;
+  const FORMSPREE_ID    = process.env.FORMSPREE_ADMIN_ID;
   const SITE_URL   = (process.env.SITE_URL || 'https://aurelyscollection.com').replace(/\/$/, '');
 
   if (!STRIPE_KEY) {
@@ -134,6 +135,30 @@ exports.handler = async (event) => {
         headers: _corsHeaders(),
         body: JSON.stringify({ error: msg }),
       };
+    }
+
+    /* Notifier l'admin via Formspree dès qu'un client initie un paiement */
+    if (FORMSPREE_ID && guest && dates) {
+      const currency = (pricing.currency || 'EUR').toUpperCase();
+      const totalFmt = new Intl.NumberFormat('fr-FR', {
+        style: 'currency', currency, minimumFractionDigits: 0
+      }).format(pricing.total || 0);
+      fetch(`https://formspree.io/f/${FORMSPREE_ID}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Accept: 'application/json' },
+        body: JSON.stringify({
+          _subject:        `[AURELYS] Demande de réservation — ${propertyTitle || 'Logement'}`,
+          référence:       reservationId || '—',
+          logement:        propertyTitle || '—',
+          'client nom':    guest.name   || '—',
+          'client email':  guest.email  || '—',
+          'client tél':    guest.phone  || '—',
+          arrivée:         dates.checkIn  || '—',
+          départ:          dates.checkOut || '—',
+          'montant total': totalFmt,
+          statut:          'En attente de paiement Stripe',
+        }),
+      }).catch(() => {}); // Non bloquant
     }
 
     return {

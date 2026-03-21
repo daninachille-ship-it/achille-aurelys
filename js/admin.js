@@ -114,6 +114,9 @@ function _setupAdminRealtime() {
 
 async function _loadAllData() {
   try {
+    // Expirer les réservations pending non payées (> 2h)
+    AureDB.expirePendingReservations(2).catch(() => {});
+
     const [props, upcoming, settings, subscribers, reservations, legalPages, faqItems] = await Promise.all([
       AureDB.getProperties(),
       AureDB.getUpcomingProperties(),
@@ -238,6 +241,9 @@ function _propItemHTML(p) {
       <div class="prop-item-actions">
         <button class="btn btn-sm ${p.available ? 'btn-success' : 'btn-warning'}" onclick="togglePropertyAvailable('${p.id}')" title="${p.available ? 'Désactiver' : 'Activer'}">
           ${p.available ? '✓ En ligne' : '○ Hors ligne'}
+        </button>
+        <button class="btn btn-sm ${p.featured ? 'btn-accent' : 'btn-outline'}" onclick="setFeaturedProperty('${p.id}')" title="${p.featured ? 'En-tête actuel' : 'Mettre en en-tête'}">
+          ${p.featured ? '★ En-tête' : '☆ En-tête'}
         </button>
         <button class="btn btn-outline btn-sm" onclick="demoteToUpcoming('${p.id}')" title="Passer en logement à venir">→ À venir</button>
         <button class="btn btn-secondary btn-sm" onclick="editProperty('${p.id}')">Modifier</button>
@@ -375,11 +381,37 @@ async function _notifySubscribers(type, property) {
       body: JSON.stringify({ type, property })
     });
     const data = await res.json();
+    if (!res.ok) {
+      showToast('Newsletter : ' + (data.error || 'Erreur serveur (vérifier BREVO_API_KEY, FROM_EMAIL dans Netlify).'), 'error');
+      console.error('[AURELYS] notify-subscribers:', data);
+      return;
+    }
     if (data.sent > 0) {
-      showToast(`Email envoyé à ${data.sent} abonné${data.sent > 1 ? 's' : ''}.`, 'success');
+      showToast(`Newsletter : ${data.sent} email${data.sent > 1 ? 's' : ''} envoyé${data.sent > 1 ? 's' : ''}.`, 'success');
+    } else if (data.message) {
+      showToast('Newsletter : ' + data.message);
+    }
+    if (data.errors && data.errors.length > 0) {
+      console.warn('[AURELYS] notify-subscribers errors:', data.errors);
+      showToast('Newsletter : certains emails ont échoué. Vérifiez la console.', 'error');
     }
   } catch (e) {
     console.warn('[AURELYS] Notification email échouée :', e.message);
+    showToast('Newsletter : impossible de contacter le serveur.', 'error');
+  }
+}
+
+/* Définit le logement mis en avant dans l'en-tête du site */
+async function setFeaturedProperty(id) {
+  const p = _properties.find(x => x.id === id);
+  if (!p) return;
+  if (p.featured) { showToast('Ce logement est d\u00e9j\u00e0 en en-t\u00eate.'); return; }
+  try {
+    await AureDB.setFeaturedProperty(id);
+    await _refreshPanel('properties');
+    showToast(`"${p.title}" d\u00e9fini comme logement en en-t\u00eate.`, 'success');
+  } catch (err) {
+    showToast('Erreur : ' + err.message, 'error');
   }
 }
 
@@ -862,14 +894,37 @@ function exportSubscribers() {
 }
 
 /* ── Réservations ───────────────────────────────────────────── */
+let _showAllReservations = false;
+
+function toggleCancelledReservations() {
+  _showAllReservations = !_showAllReservations;
+  const btn = document.getElementById('toggle-cancelled-btn');
+  if (btn) btn.textContent = _showAllReservations ? 'Masquer les annulées' : 'Voir les annulées';
+  _renderReservations();
+}
+
 function _renderReservations() {
   const tbody = document.getElementById('reservations-body');
   if (!tbody) return;
-  if (_reservations.length === 0) {
-    tbody.innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted);">Aucune r\u00e9servation pour le moment.</td></tr>';
+
+  const visible = _showAllReservations
+    ? _reservations
+    : _reservations.filter(r => r.status !== 'cancelled');
+
+  const cancelledCount = _reservations.filter(r => r.status === 'cancelled').length;
+  const btn = document.getElementById('toggle-cancelled-btn');
+  if (btn) {
+    btn.textContent = _showAllReservations
+      ? 'Masquer les annulées'
+      : `Voir les annulées (${cancelledCount})`;
+    btn.style.display = cancelledCount > 0 ? '' : 'none';
+  }
+
+  if (visible.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="8" style="text-align:center;padding:40px;color:var(--text-muted);">${_reservations.length === 0 ? 'Aucune r\u00e9servation pour le moment.' : 'Aucune r\u00e9servation active. Cliquez sur "Voir les annul\u00e9es" pour les afficher.'}</td></tr>`;
     return;
   }
-  tbody.innerHTML = _reservations.map(r => {
+  tbody.innerHTML = visible.map(r => {
     const labels        = { pending: 'En attente', confirmed: 'Confirm\u00e9e', cancelled: 'Annul\u00e9e' };
     const classes       = { pending: 'badge-pending', confirmed: 'badge-available', cancelled: 'badge-unavailable' };
     const payLabels     = { unpaid: 'Non pay\u00e9', paid: 'Pay\u00e9', refunded: 'Rembours\u00e9' };
@@ -896,9 +951,21 @@ function _renderReservations() {
 
 async function confirmReservation(id) {
   try {
+    const reservation = _reservations.find(r => r.id === id);
     await AureDB.updateReservationStatus(id, 'confirmed');
+
+    // Bloquer les dates dès la confirmation manuelle
+    if (reservation && reservation.property_id && reservation.check_in && reservation.check_out) {
+      await AureDB.blockReservationDates(
+        reservation.property_id,
+        reservation.check_in,
+        reservation.check_out,
+        id
+      );
+    }
+
     await _refreshPanel('reservations');
-    showToast('R\u00e9servation confirm\u00e9e.');
+    showToast('R\u00e9servation confirm\u00e9e. Dates bloqu\u00e9es.');
   } catch (err) { showToast('Erreur : ' + err.message, 'error'); }
 }
 
@@ -1079,6 +1146,8 @@ window.exportSubscribers            = exportSubscribers;
 window.deleteSubscriber             = deleteSubscriber;
 window.confirmReservation           = confirmReservation;
 window.cancelReservation            = cancelReservation;
+window.toggleCancelledReservations  = toggleCancelledReservations;
+window.setFeaturedProperty          = setFeaturedProperty;
 window.loadAvailabilityForProperty  = loadAvailabilityForProperty;
 window.blockDate                    = blockDate;
 window.unblockDate                  = unblockDate;

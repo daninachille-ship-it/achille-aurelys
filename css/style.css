@@ -1494,6 +1494,12 @@ a.contact-detail-value:hover { color: var(--color-accent); }
   border: 1px solid var(--color-border);
   border-radius: var(--radius);
   margin-bottom: 24px;
+  transition: background 0.2s ease, border-color 0.2s ease;
+}
+
+.modal-property-preview:hover {
+  background: rgba(255, 255, 255, 0.07);
+  border-color: rgba(255, 255, 255, 0.2);
 }
 
 .modal-prop-img {

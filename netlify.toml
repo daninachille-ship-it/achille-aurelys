@@ -16,6 +16,11 @@
   status = 200
 
 [[redirects]]
+  from = "/residence"
+  to   = "/residence.html"
+  status = 200
+
+[[redirects]]
   from = "/cgv"
   to   = "/legal.html?page=cgv"
   status = 302

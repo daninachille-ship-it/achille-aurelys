@@ -4,6 +4,13 @@
   publish = "."
   functions = "netlify/functions"
 
+# Redirection www → sans www (canonicalisation SEO)
+[[redirects]]
+  from   = "https://www.aurelyscollection.com/*"
+  to     = "https://aurelyscollection.com/:splat"
+  status = 301
+  force  = true
+
 # Redirections pour les routes propres (sans .html)
 [[redirects]]
   from = "/admin"

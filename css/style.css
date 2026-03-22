@@ -564,6 +564,12 @@ input, textarea, select {
   background: var(--color-bg-surface);
   /* Subtle border visible avant chargement image */
   box-shadow: 0 0 0 1px var(--color-border);
+  transition: transform 0.3s var(--ease-out), box-shadow 0.3s var(--ease-out);
+}
+
+.property-card:hover {
+  transform: translateY(-6px) scale(1.01);
+  box-shadow: 0 16px 40px rgba(0, 0, 0, 0.45), 0 0 0 1px rgba(255, 255, 255, 0.08);
 }
 
 .property-media {

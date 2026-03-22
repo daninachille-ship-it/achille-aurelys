@@ -49,3 +49,9 @@
   for = "/js/*"
   [headers.values]
     Cache-Control = "public, max-age=31536000, immutable"
+
+# Content-Type correct pour le sitemap
+[[headers]]
+  for = "/sitemap.xml"
+  [headers.values]
+    Content-Type = "application/xml; charset=UTF-8"

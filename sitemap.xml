@@ -3,12 +3,14 @@
 
   <url>
     <loc>https://aurelyscollection.com/</loc>
+    <lastmod>2026-03-26</lastmod>
     <changefreq>weekly</changefreq>
     <priority>1.0</priority>
   </url>
 
   <url>
     <loc>https://aurelyscollection.com/residence</loc>
+    <lastmod>2026-03-26</lastmod>
     <changefreq>daily</changefreq>
     <priority>0.8</priority>
   </url>

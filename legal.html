@@ -307,7 +307,9 @@
   </p>
 </footer>
 
-<script src="js/storage.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
+<script src="js/config.js"></script>
+<script src="js/db.js?v=2"></script>
 <script>
   // ── Rendu Markdown minimal (pas de dépendance externe) ───── //
   function renderMarkdown(text) {
@@ -344,9 +346,8 @@
   }
 
   // ── Chargement des pages légales ──────────────────────────── //
-  function loadLegalPages() {
-    const data = Storage.getData();
-    const pages = data.legalPages || {};
+  async function loadLegalPages() {
+    const pages = await AureDB.getLegalPages();
 
     document.getElementById('body-cgv').innerHTML = renderMarkdown(pages.cgv);
     document.getElementById('body-privacy').innerHTML = renderMarkdown(pages.privacy);
@@ -386,8 +387,8 @@
   }
 
   // ── Initialisation ────────────────────────────────────────── //
-  document.addEventListener('DOMContentLoaded', () => {
-    loadLegalPages();
+  document.addEventListener('DOMContentLoaded', async () => {
+    await loadLegalPages();
 
     // Lire la page depuis l'URL (?page=cgv|privacy|mentions)
     const params = new URLSearchParams(window.location.search);
@@ -405,10 +406,6 @@
     document.getElementById('footer-year').textContent = new Date().getFullYear();
   });
 
-  // Synchronisation si les données sont mises à jour dans un autre onglet
-  window.addEventListener('storage', (e) => {
-    if (e.key === 'achille_aurelys_v1') loadLegalPages();
-  });
 </script>
 
 </body>

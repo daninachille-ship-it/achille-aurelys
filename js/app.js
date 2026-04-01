@@ -295,26 +295,10 @@ function renderProperties(properties) {
 
   grid.innerHTML = available.map((p, i) => _propertyCardHTML(p, i)).join('');
 
-  /* Mise à jour des icônes favoris selon l'état sauvegardé */
-  grid.querySelectorAll('.prop-fav-icon').forEach(btn => {
-    if (isFav(btn.dataset.favId)) btn.classList.add('is-fav');
-  });
-
   grid.querySelectorAll('[data-reserve]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
       AureBooking.initBookingModal(btn.dataset.reserve);
-    });
-  });
-
-  /* Clic favori sur la carte */
-  grid.querySelectorAll('.prop-fav-icon').forEach(btn => {
-    btn.addEventListener('click', (e) => {
-      e.stopPropagation();
-      const id = btn.dataset.favId;
-      toggleFav(id);
-      btn.classList.toggle('is-fav', isFav(id));
-      showToast(isFav(id) ? 'Ajouté aux favoris' : 'Retiré des favoris', 'success');
     });
   });
 
@@ -326,9 +310,8 @@ function renderProperties(properties) {
     });
   });
 
-  /* Strip destinations + filtre recherche */
+  /* Strip destinations */
   initDestStrip(available);
-  initSearchFilter();
 
   initFadeIn();
 }
@@ -375,7 +358,6 @@ function _propertyCardHTML(p, index = 0) {
           <div class="property-tags">
             ${badgesHtml}
           </div>
-          <button class="prop-fav-icon" data-fav-id="${escHtml(p.id)}" aria-label="Ajouter aux favoris" title="Favoris">♡</button>
           <div class="property-bottom">
             <p class="property-location">${loc}</p>
             <h3 class="property-title">${title}</h3>
@@ -696,24 +678,6 @@ function showToast(message, type = 'success') {
 }
 
 
-/* ── Favoris ─────────────────────────────────────────────────── */
-
-const _FAV_KEY = 'aurelys_favs';
-
-function getFavs() {
-  try { return JSON.parse(localStorage.getItem(_FAV_KEY) || '[]'); } catch { return []; }
-}
-
-function isFav(id) { return getFavs().includes(id); }
-
-function toggleFav(id) {
-  const favs = getFavs();
-  const idx  = favs.indexOf(id);
-  if (idx === -1) favs.push(id); else favs.splice(idx, 1);
-  localStorage.setItem(_FAV_KEY, JSON.stringify(favs));
-}
-
-
 /* ── Strip destinations ──────────────────────────────────────── */
 
 function initDestStrip(properties) {
@@ -738,33 +702,16 @@ function initDestStrip(properties) {
 }
 
 
-/* ── Filtre recherche ────────────────────────────────────────── */
-
-let _searchInited = false;
-
-function initSearchFilter() {
-  if (_searchInited) return;
-  _searchInited = true;
-  const input = document.getElementById('hero-search-input');
-  const btn   = document.querySelector('.hero-search-btn');
-  if (!input) return;
-  input.addEventListener('input', _applyFilters);
-  if (btn) btn.addEventListener('click', () => input.focus());
-}
-
 function _applyFilters() {
-  const query    = (document.getElementById('hero-search-input')?.value || '').toLowerCase().trim();
   const activePill = document.querySelector('#dest-list .dest-pill.active');
   const dest     = activePill ? activePill.dataset.dest.toLowerCase() : '';
   const grid     = document.getElementById('properties-grid');
   if (!grid) return;
 
   grid.querySelectorAll('.property-card').forEach(card => {
-    const loc   = (card.dataset.location || '').toLowerCase();
-    const title = (card.dataset.title    || '').toLowerCase();
-    const matchDest  = !dest  || loc.includes(dest);
-    const matchQuery = !query || loc.includes(query) || title.includes(query);
-    card.classList.toggle('prop-hidden', !(matchDest && matchQuery));
+    const loc  = (card.dataset.location || '').toLowerCase();
+    const matchDest = !dest || loc.includes(dest);
+    card.classList.toggle('prop-hidden', !matchDest);
   });
 }
 
@@ -822,25 +769,6 @@ function openPropOverlay(id) {
 
   const bookBtn = document.getElementById('po-book-btn');
   if (bookBtn) bookBtn.href = `residence.html?id=${encodeURIComponent(id)}`;
-
-  const favBtn = document.getElementById('po-fav-btn');
-  if (favBtn) {
-    const fav = isFav(id);
-    favBtn.textContent = fav ? '♥ Favoris' : '♡ Favoris';
-    favBtn.classList.toggle('is-fav', fav);
-    favBtn.setAttribute('aria-pressed', String(fav));
-    favBtn.onclick = () => {
-      toggleFav(id);
-      const nowFav = isFav(id);
-      favBtn.textContent = nowFav ? '♥ Favoris' : '♡ Favoris';
-      favBtn.classList.toggle('is-fav', nowFav);
-      favBtn.setAttribute('aria-pressed', String(nowFav));
-      // Mettre à jour l'icône sur la carte
-      const cardFavBtn = document.querySelector(`.prop-fav-icon[data-fav-id="${id}"]`);
-      if (cardFavBtn) cardFavBtn.classList.toggle('is-fav', nowFav);
-      showToast(nowFav ? 'Ajouté aux favoris' : 'Retiré des favoris', 'success');
-    };
-  }
 
   const overlay = document.getElementById('prop-overlay');
   if (overlay) {

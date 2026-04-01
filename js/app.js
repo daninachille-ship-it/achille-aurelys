@@ -14,6 +14,8 @@ document.addEventListener('DOMContentLoaded', async () => {
   initNav();
   initFadeIn();
   initParallax();
+  _initOverlayListeners();
+  _initLightboxListeners();
   applyContent({});   // applique les valeurs par défaut tout de suite
 
   // Timeout individuel par requête : évite qu'une requête bloquée suspende toute la page
@@ -293,6 +295,11 @@ function renderProperties(properties) {
 
   grid.innerHTML = available.map((p, i) => _propertyCardHTML(p, i)).join('');
 
+  /* Mise à jour des icônes favoris selon l'état sauvegardé */
+  grid.querySelectorAll('.prop-fav-icon').forEach(btn => {
+    if (isFav(btn.dataset.favId)) btn.classList.add('is-fav');
+  });
+
   grid.querySelectorAll('[data-reserve]').forEach(btn => {
     btn.addEventListener('click', (e) => {
       e.stopPropagation();
@@ -300,14 +307,28 @@ function renderProperties(properties) {
     });
   });
 
-  /* Clic sur la carte → page logement avec toutes les photos */
-  grid.querySelectorAll('.property-card').forEach(card => {
-    card.style.cursor = 'pointer';
-    card.addEventListener('click', () => {
-      const id = card.dataset.propertyId;
-      if (id) window.location.href = `residence.html?id=${encodeURIComponent(id)}`;
+  /* Clic favori sur la carte */
+  grid.querySelectorAll('.prop-fav-icon').forEach(btn => {
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const id = btn.dataset.favId;
+      toggleFav(id);
+      btn.classList.toggle('is-fav', isFav(id));
+      showToast(isFav(id) ? 'Ajouté aux favoris' : 'Retiré des favoris', 'success');
     });
   });
+
+  /* Clic sur la carte → overlay de détail */
+  grid.querySelectorAll('.property-card').forEach(card => {
+    card.addEventListener('click', () => {
+      const id = card.dataset.propertyId;
+      if (id) openPropOverlay(id);
+    });
+  });
+
+  /* Strip destinations + filtre recherche */
+  initDestStrip(available);
+  initSearchFilter();
 
   initFadeIn();
 }
@@ -343,12 +364,18 @@ function _propertyCardHTML(p, index = 0) {
   const delayClass = delay > 0 ? ` fade-in-delay-${delay}` : '';
 
   return `
-    <article class="property-card fade-in${delayClass}" role="article" data-property-id="${escHtml(p.id)}">
+    <article class="property-card fade-in${delayClass}" role="article"
+      data-property-id="${escHtml(p.id)}"
+      data-location="${city}"
+      data-title="${title}">
       <div class="property-media">
         <img class="property-img" src="${cover}" alt="${title}" loading="lazy"
           onerror="this.src='https://images.unsplash.com/photo-1613977257363-707ba9348227?w=800&q=80'">
         <div class="property-info-overlay">
-          <div class="property-tags">${badgesHtml}</div>
+          <div class="property-tags">
+            ${badgesHtml}
+          </div>
+          <button class="prop-fav-icon" data-fav-id="${escHtml(p.id)}" aria-label="Ajouter aux favoris" title="Favoris">♡</button>
           <div class="property-bottom">
             <p class="property-location">${loc}</p>
             <h3 class="property-title">${title}</h3>
@@ -669,6 +696,251 @@ function showToast(message, type = 'success') {
 }
 
 
+/* ── Favoris ─────────────────────────────────────────────────── */
+
+const _FAV_KEY = 'aurelys_favs';
+
+function getFavs() {
+  try { return JSON.parse(localStorage.getItem(_FAV_KEY) || '[]'); } catch { return []; }
+}
+
+function isFav(id) { return getFavs().includes(id); }
+
+function toggleFav(id) {
+  const favs = getFavs();
+  const idx  = favs.indexOf(id);
+  if (idx === -1) favs.push(id); else favs.splice(idx, 1);
+  localStorage.setItem(_FAV_KEY, JSON.stringify(favs));
+}
+
+
+/* ── Strip destinations ──────────────────────────────────────── */
+
+function initDestStrip(properties) {
+  const list = document.getElementById('dest-list');
+  if (!list) return;
+
+  const cities = [...new Set(
+    properties.map(p => p.location && p.location.city).filter(Boolean)
+  )].sort();
+
+  // Ne garder que le bouton "Toutes" et injecter les villes
+  list.innerHTML = '<button class="dest-pill active" data-dest="">Toutes</button>'
+    + cities.map(c => `<button class="dest-pill" data-dest="${escHtml(c)}">${escHtml(c)}</button>`).join('');
+
+  list.addEventListener('click', (e) => {
+    const pill = e.target.closest('.dest-pill');
+    if (!pill) return;
+    list.querySelectorAll('.dest-pill').forEach(p => p.classList.remove('active'));
+    pill.classList.add('active');
+    _applyFilters();
+  });
+}
+
+
+/* ── Filtre recherche ────────────────────────────────────────── */
+
+let _searchInited = false;
+
+function initSearchFilter() {
+  if (_searchInited) return;
+  _searchInited = true;
+  const input = document.getElementById('hero-search-input');
+  const btn   = document.querySelector('.hero-search-btn');
+  if (!input) return;
+  input.addEventListener('input', _applyFilters);
+  if (btn) btn.addEventListener('click', () => input.focus());
+}
+
+function _applyFilters() {
+  const query    = (document.getElementById('hero-search-input')?.value || '').toLowerCase().trim();
+  const activePill = document.querySelector('#dest-list .dest-pill.active');
+  const dest     = activePill ? activePill.dataset.dest.toLowerCase() : '';
+  const grid     = document.getElementById('properties-grid');
+  if (!grid) return;
+
+  grid.querySelectorAll('.property-card').forEach(card => {
+    const loc   = (card.dataset.location || '').toLowerCase();
+    const title = (card.dataset.title    || '').toLowerCase();
+    const matchDest  = !dest  || loc.includes(dest);
+    const matchQuery = !query || loc.includes(query) || title.includes(query);
+    card.classList.toggle('prop-hidden', !(matchDest && matchQuery));
+  });
+}
+
+
+/* ── Overlay logement ────────────────────────────────────────── */
+
+function openPropOverlay(id) {
+  const p = window._aureProps && window._aureProps[id];
+  if (!p) return;
+
+  const cover    = (p.media && p.media.coverImage) || '';
+  const title    = p.title || '';
+  const city     = p.location ? (p.location.city || '') : '';
+  const area     = p.location ? (p.location.area || '') : '';
+  const loc      = [city, area].filter(Boolean).join(' · ');
+  const price    = (p.pricing && p.pricing.perNight) || 0;
+  const currency = (p.pricing && p.pricing.currency) || 'EUR';
+  const guests   = p.capacity && p.capacity.guests;
+  const bedrooms = p.capacity && p.capacity.bedrooms;
+  const desc     = p.shortDescription || p.description || '';
+  const amenities = p.amenities || [];
+
+  const priceStr = new Intl.NumberFormat('fr-FR', {
+    style: 'currency', currency, minimumFractionDigits: 0
+  }).format(price);
+
+  const metaParts = [loc, guests && `${guests} pers.`, bedrooms && `${bedrooms} ch.`, `${priceStr} / nuit`]
+    .filter(Boolean).join('  ·  ');
+
+  // Galerie
+  const gallery = document.getElementById('po-gallery');
+  if (gallery) {
+    gallery.innerHTML = `<img src="${escHtml(cover)}" alt="${escHtml(title)}"
+      onerror="this.src='https://images.unsplash.com/photo-1613977257363-707ba9348227?w=800&q=80'">`;
+    // Si plusieurs images
+    const images = (p.media && p.media.images) || (cover ? [cover] : []);
+    gallery.querySelector('img').addEventListener('click', () => openLightbox(images, 0));
+  }
+
+  const metaEl = document.getElementById('po-meta');
+  if (metaEl) metaEl.textContent = metaParts;
+
+  const titleEl = document.getElementById('po-title');
+  if (titleEl) titleEl.textContent = title;
+
+  const descEl = document.getElementById('po-desc');
+  if (descEl) descEl.textContent = desc;
+
+  const amenEl = document.getElementById('po-amenities');
+  if (amenEl) {
+    amenEl.innerHTML = amenities.map(a =>
+      `<span class="property-amenity-pill">${escHtml(a)}</span>`
+    ).join('');
+  }
+
+  const bookBtn = document.getElementById('po-book-btn');
+  if (bookBtn) bookBtn.href = `residence.html?id=${encodeURIComponent(id)}`;
+
+  const favBtn = document.getElementById('po-fav-btn');
+  if (favBtn) {
+    const fav = isFav(id);
+    favBtn.textContent = fav ? '♥ Favoris' : '♡ Favoris';
+    favBtn.classList.toggle('is-fav', fav);
+    favBtn.setAttribute('aria-pressed', String(fav));
+    favBtn.onclick = () => {
+      toggleFav(id);
+      const nowFav = isFav(id);
+      favBtn.textContent = nowFav ? '♥ Favoris' : '♡ Favoris';
+      favBtn.classList.toggle('is-fav', nowFav);
+      favBtn.setAttribute('aria-pressed', String(nowFav));
+      // Mettre à jour l'icône sur la carte
+      const cardFavBtn = document.querySelector(`.prop-fav-icon[data-fav-id="${id}"]`);
+      if (cardFavBtn) cardFavBtn.classList.toggle('is-fav', nowFav);
+      showToast(nowFav ? 'Ajouté aux favoris' : 'Retiré des favoris', 'success');
+    };
+  }
+
+  const overlay = document.getElementById('prop-overlay');
+  if (overlay) {
+    overlay.removeAttribute('hidden');
+    document.body.style.overflow = 'hidden';
+    // Focus pour accessibilité
+    setTimeout(() => overlay.querySelector('.prop-overlay-close')?.focus(), 50);
+  }
+}
+
+function closePropOverlay() {
+  const overlay = document.getElementById('prop-overlay');
+  if (overlay) overlay.setAttribute('hidden', '');
+  document.body.style.overflow = '';
+}
+
+function _initOverlayListeners() {
+  const overlay = document.getElementById('prop-overlay');
+  if (!overlay) return;
+
+  overlay.querySelector('.prop-overlay-close')?.addEventListener('click', closePropOverlay);
+  overlay.querySelector('.prop-overlay-backdrop')?.addEventListener('click', closePropOverlay);
+
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') {
+      if (!document.getElementById('lightbox')?.hasAttribute('hidden')) {
+        closeLightbox();
+      } else {
+        closePropOverlay();
+      }
+    }
+  });
+}
+
+
+/* ── Lightbox ────────────────────────────────────────────────── */
+
+let _lbImages = [];
+let _lbIndex  = 0;
+
+function openLightbox(images, index) {
+  _lbImages = Array.isArray(images) && images.length ? images : [];
+  _lbIndex  = index || 0;
+  if (!_lbImages.length) return;
+
+  const lb = document.getElementById('lightbox');
+  if (!lb) return;
+
+  _lbRender();
+  lb.removeAttribute('hidden');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeLightbox() {
+  const lb = document.getElementById('lightbox');
+  if (lb) lb.setAttribute('hidden', '');
+  // Se souvenir de l'état du body scroll (overlay peut encore être ouvert)
+  if (document.getElementById('prop-overlay')?.hasAttribute('hidden')) {
+    document.body.style.overflow = '';
+  }
+}
+
+function _lbRender() {
+  const img     = document.getElementById('lightbox-img');
+  const counter = document.getElementById('lightbox-counter');
+  const prev    = document.querySelector('.lightbox-prev');
+  const next    = document.querySelector('.lightbox-next');
+
+  if (img) {
+    img.src = _lbImages[_lbIndex] || '';
+    img.alt = `Photo ${_lbIndex + 1}`;
+  }
+  if (counter) counter.textContent = `${_lbIndex + 1} / ${_lbImages.length}`;
+
+  if (prev) { _lbImages.length > 1 ? prev.removeAttribute('hidden') : prev.setAttribute('hidden', ''); }
+  if (next) { _lbImages.length > 1 ? next.removeAttribute('hidden') : next.setAttribute('hidden', ''); }
+}
+
+function _initLightboxListeners() {
+  const lb = document.getElementById('lightbox');
+  if (!lb) return;
+
+  lb.querySelector('.lightbox-close')?.addEventListener('click', closeLightbox);
+
+  lb.querySelector('.lightbox-prev')?.addEventListener('click', () => {
+    _lbIndex = (_lbIndex - 1 + _lbImages.length) % _lbImages.length;
+    _lbRender();
+  });
+
+  lb.querySelector('.lightbox-next')?.addEventListener('click', () => {
+    _lbIndex = (_lbIndex + 1) % _lbImages.length;
+    _lbRender();
+  });
+
+  lb.addEventListener('click', (e) => {
+    if (e.target === lb) closeLightbox();
+  });
+}
+
+
 /* ── Sécurité HTML ───────────────────────────────────────────── */
 
 function escHtml(str) {
@@ -680,5 +952,6 @@ function escHtml(str) {
     .replace(/'/g, '&#39;');
 }
 
-window.showToast = showToast;
-window.escHtml   = escHtml;
+window.showToast       = showToast;
+window.escHtml         = escHtml;
+window.openPropOverlay = openPropOverlay;

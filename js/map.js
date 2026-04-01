@@ -187,7 +187,7 @@ const AureMap = (() => {
           <p class="map-popup-price"><strong>${priceStr}</strong> <span>/ nuit</span></p>
           <button
             class="map-popup-btn"
-            onclick="(typeof AureBooking !== 'undefined') && AureBooking.initBookingModal('${_esc(p.id)}')"
+            onclick="(typeof openPropOverlay !== 'undefined') ? openPropOverlay('${_esc(p.id)}') : ((typeof AureBooking !== 'undefined') && AureBooking.initBookingModal('${_esc(p.id)}'))"
             type="button"
           >
             Voir le logement

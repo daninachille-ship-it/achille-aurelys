@@ -104,6 +104,10 @@
   <!-- Texture grain -->
   <div class="hero-grain" aria-hidden="true"></div>
 
+  <!-- Orbes animés -->
+  <div class="hero-orb hero-orb-1" aria-hidden="true"></div>
+  <div class="hero-orb hero-orb-2" aria-hidden="true"></div>
+
   <!-- Contenu centré -->
   <div class="hero-center-wrap">
     <div class="hero-center-content">
@@ -119,6 +123,12 @@
           </svg>
         </a>
         <a href="#a-propos" class="btn btn-outline">Notre approche</a>
+      </div>
+
+      <!-- Barre de recherche rapide -->
+      <div class="hero-search" role="search" aria-label="Recherche rapide">
+        <input id="hero-search-input" type="text" placeholder="Ville, résidence…" autocomplete="off" aria-label="Rechercher une résidence">
+        <button type="button" class="hero-search-btn" aria-label="Rechercher">→</button>
       </div>
     </div>
   </div>
@@ -168,6 +178,15 @@
         <p class="value-body">Des espaces qui ont une âme. Nous refusons l'uniformité et privilégions les lieux chargés de caractère et d'histoire.</p>
       </div>
 
+    </div>
+  </div>
+</section>
+
+<!-- ── Filtre destinations ──────────────────────────────────── -->
+<section class="dest-strip" aria-label="Filtrer par destination">
+  <div class="container">
+    <div class="dest-list" id="dest-list">
+      <button class="dest-pill active" data-dest="">Toutes</button>
     </div>
   </div>
 </section>
@@ -531,6 +550,34 @@
     </div>
   </div>
 </footer>
+
+<!-- ── Overlay détail logement ──────────────────────────────── -->
+<div id="prop-overlay" class="prop-overlay" role="dialog" aria-modal="true" aria-label="Détail résidence" hidden>
+  <div class="prop-overlay-backdrop"></div>
+  <div class="prop-overlay-panel">
+    <button class="prop-overlay-close" aria-label="Fermer">✕</button>
+    <div class="prop-overlay-gallery" id="po-gallery"></div>
+    <div class="prop-overlay-body">
+      <div class="prop-overlay-meta" id="po-meta"></div>
+      <h2 class="prop-overlay-title" id="po-title"></h2>
+      <p class="prop-overlay-desc" id="po-desc"></p>
+      <div class="prop-overlay-amenities" id="po-amenities"></div>
+      <div class="prop-overlay-cta">
+        <a id="po-book-btn" href="#" class="btn btn-primary">Réserver</a>
+        <button id="po-fav-btn" class="btn btn-outline prop-fav-btn" aria-pressed="false">♡ Favoris</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ── Lightbox images ──────────────────────────────────────── -->
+<div id="lightbox" class="lightbox" role="dialog" aria-modal="true" aria-label="Galerie photos" hidden>
+  <button class="lightbox-close" aria-label="Fermer">✕</button>
+  <button class="lightbox-prev" aria-label="Photo précédente">‹</button>
+  <button class="lightbox-next" aria-label="Photo suivante">›</button>
+  <img class="lightbox-img" id="lightbox-img" src="" alt="Photo de la résidence">
+  <div class="lightbox-counter" id="lightbox-counter"></div>
+</div>
 
 <!-- ── Scripts ──────────────────────────────────────────────── -->
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2/dist/umd/supabase.js"></script>
